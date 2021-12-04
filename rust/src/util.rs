@@ -8,7 +8,9 @@ pub fn read_input(day: usize) -> String {
     let filename = format!("../inputs/day{:0>2}", day);
 
     if !std::path::Path::new(&filename).exists() {
-        let cookie_json = fs::read_to_string("../cookie.json").unwrap();
+        let cookie_json = fs::read_to_string("../cookie.json")
+            .unwrap()
+            .replace("\n", "");
         let cookie_store = CookieStore::load_json(cookie_json.as_bytes()).unwrap();
 
         let url = format!("https://adventofcode.com/{:0>4}/day/{}/input", 2021, day);
