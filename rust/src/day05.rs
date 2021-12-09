@@ -1,3 +1,5 @@
+use core::fmt;
+use std::collections::hash_map::{Entry, Iter};
 use std::collections::HashMap;
 
 use nom::{
@@ -24,6 +26,12 @@ impl Point {
     }
 }
 
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct Pipe {
     start: Point,
@@ -32,50 +40,75 @@ struct Pipe {
 
 impl Pipe {
     pub fn new(start: Point, end: Point) -> Pipe {
-        Pipe { start, end }
+        if start.x >= end.x {
+            Pipe {
+                start: end,
+                end: start,
+            }
+        } else {
+            Pipe { start, end }
+        }
+    }
+
+    fn straignt(&self) -> bool {
+        self.start.x == self.end.x || self.start.y == self.end.y
+    }
+
+    fn descending(&self) -> bool {
+        (self.start.x <= self.end.x && self.start.y <= self.end.y)
+            || (self.start.x >= self.end.x && self.start.y >= self.end.y)
     }
 
     fn points(&self) -> Vec<Point> {
-        let ydiff = self.start.y - self.end.y;
-        let xdiff = self.start.x - self.end.x;
+        let maxx = self.start.x.max(self.end.x);
+        let minx = self.start.x.min(self.end.x);
 
-        match (xdiff.abs(), ydiff.abs()) {
-            (maxxdiff, maxydiff) if maxxdiff >= maxydiff => {
-                let slope = match xdiff {
-                    0 => 0,
-                    n => ydiff / n,
-                };
-                let c = self.start.y - self.start.x * slope;
+        let maxy = self.start.y.max(self.end.y);
+        let miny = self.start.y.min(self.end.y);
 
-                let maxx = self.start.x.max(self.end.x);
-                let minx = self.start.x.min(self.end.x);
+        let mut acc: Vec<Point> = Vec::new();
 
-                (minx..=maxx)
-                    .map(|x| {
-                        let y = slope * x + c;
-                        Point::new(x, y)
-                    })
-                    .collect()
+        if self.straignt() {
+            for x in minx..=maxx {
+                for y in miny..=maxy {
+                    acc.push(Point::new(x, y))
+                }
             }
-            (maxxdiff, maxydiff) if maxxdiff < maxydiff => {
-                let slope = match ydiff {
-                    0 => 0,
-                    n => xdiff / n,
-                };
-                let c = self.start.x - self.start.y * slope;
+        } else {
+            let yrange: Vec<i32> = if !self.descending() {
+                (miny..=maxy).rev().collect()
+            } else {
+                (miny..=maxy).collect()
+            };
 
-                let maxy = self.start.y.max(self.end.y);
-                let miny = self.start.y.min(self.end.y);
-
-                (miny..=maxy)
-                    .map(|y| {
-                        let x = slope * y + c;
-                        Point::new(x, y)
-                    })
-                    .collect()
-            }
-            (_, _) => unreachable!(),
+            (minx..=maxx)
+                .zip(yrange)
+                .for_each(|(x, y)| acc.push(Point::new(x, y)))
         }
+
+        acc
+    }
+}
+
+impl fmt::Display for Pipe {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}]", self.start, self.end)
+    }
+}
+
+struct Pipes(HashMap<Point, u32>);
+
+impl Pipes {
+    fn new() -> Pipes {
+        Pipes(HashMap::new())
+    }
+
+    fn entry(&mut self, key: Point) -> Entry<Point, u32> {
+        self.0.entry(key)
+    }
+
+    fn iter(&self) -> Iter<Point, u32> {
+        self.0.iter()
     }
 }
 
@@ -101,38 +134,59 @@ fn pipes(s: &str) -> IResult<&str, Vec<Pipe>> {
 pub fn part1(data: String) -> usize {
     let (_res, pipes) = pipes(&data).unwrap();
 
-    let mut board: HashMap<Point, u32> = HashMap::new();
+    let mut diagram: HashMap<Point, u32> = HashMap::new();
 
     pipes
         .iter()
-        .filter(|pipe| pipe.start.x == pipe.end.x || pipe.start.y == pipe.end.y)
+        .filter(|pipe| pipe.straignt())
         .for_each(|pipe| {
             pipe.points().iter().for_each(|point| {
-                board
+                diagram
                     .entry(point.clone())
                     .and_modify(|x| *x += 1)
                     .or_insert(1);
             })
         });
 
-    board.iter().filter(|(_, n)| **n > 1).count()
+    diagram.iter().filter(|(_, n)| **n >= 2).count()
+}
+
+impl fmt::Display for Pipes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (maxx, maxy) = self.0.iter().fold((0, 0), |(prevx, prevy), (point, _)| {
+            (prevx.max(point.x), prevy.max(point.y))
+        });
+
+        for y in 0..=maxy {
+            for x in 0..=maxx {
+                let v = match self.0.get(&Point::new(x, y)).unwrap_or(&0) {
+                    0 => '.',
+                    n => char::from_digit(*n, 10).unwrap(),
+                };
+
+                write!(f, "{}", v)?
+            }
+            write!(f, "\n")?
+        }
+        Ok(())
+    }
 }
 
 pub fn part2(data: String) -> usize {
     let (_res, pipes) = pipes(&data).unwrap();
 
-    let mut board: HashMap<Point, u32> = HashMap::new();
+    let mut diagram: Pipes = Pipes::new();
 
     pipes.iter().for_each(|pipe| {
         pipe.points().iter().for_each(|point| {
-            board
+            diagram
                 .entry(point.clone())
                 .and_modify(|x| *x += 1)
                 .or_insert(1);
         })
     });
 
-    board.iter().filter(|(_, n)| **n > 1).count()
+    diagram.iter().filter(|(_, n)| **n >= 2).count()
 }
 
 #[cfg(test)]
@@ -198,5 +252,24 @@ mod tests {
         let ans3 = vec![Point::new(2, 1), Point::new(2, 2)];
 
         assert_eq!(pipe3.points(), ans3);
+    }
+
+    #[test]
+    fn test_asc_points() {
+        let pipe4 = Pipe::new(Point::new(8, 0), Point::new(0, 8));
+
+        let ans4 = vec![
+            Point::new(0, 8),
+            Point::new(1, 7),
+            Point::new(2, 6),
+            Point::new(3, 5),
+            Point::new(4, 4),
+            Point::new(5, 3),
+            Point::new(6, 2),
+            Point::new(7, 1),
+            Point::new(8, 0),
+        ];
+
+        assert_eq!(pipe4.points(), ans4);
     }
 }
