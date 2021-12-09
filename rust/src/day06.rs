@@ -1,9 +1,8 @@
-use crate::parser;
-use nom::{bytes::complete::tag, multi::separated_list1};
+use crate::parser::separated_digits;
 use std::collections::HashMap;
 
 fn frisky_fish(data: String, days: usize) -> u64 {
-    let (_rest, fish) = separated_list1(tag(","), parser::from_dig)(&data).unwrap();
+    let (_rest, fish) = separated_digits(&data).unwrap();
 
     let mut school = HashMap::new();
 

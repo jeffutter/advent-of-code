@@ -1,13 +1,10 @@
-use crate::parser;
+use crate::parser::separated_digits;
 use std::collections::HashMap;
 
 use nom::{
-    branch::alt,
-    bytes::complete::tag,
     character::complete::line_ending,
     character::complete::space0,
     multi::many1,
-    multi::separated_list1,
     multi::{count, fold_many1},
     sequence::terminated,
     sequence::{preceded, tuple},
@@ -60,10 +57,7 @@ impl BingoCard {
 }
 
 fn sep_num_list(s: &str) -> IResult<&str, Vec<i32>> {
-    preceded(
-        space0,
-        separated_list1(many1(alt((tag(","), tag(" ")))), parser::from_dig),
-    )(s)
+    preceded(space0, separated_digits)(s)
 }
 
 fn card(s: &str) -> IResult<&str, BingoCard> {
