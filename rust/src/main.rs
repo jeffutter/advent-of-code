@@ -3,6 +3,7 @@ mod day02;
 mod day03;
 mod day04;
 mod day05;
+mod day06;
 mod util;
 
 fn main() {
@@ -16,4 +17,6 @@ fn main() {
     println!("Day04-02: {}", day04::part2(util::read_input(4)));
     println!("Day05-01: {}", day05::part1(util::read_input(5)));
     println!("Day05-02: {}", day05::part2(util::read_input(5)));
+    println!("Day06-01: {}", day06::part1(util::read_input(6)));
+    println!("Day06-02: {}", day06::part2(util::read_input(6)));
 }
