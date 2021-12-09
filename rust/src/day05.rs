@@ -1,14 +1,11 @@
+use crate::parser;
 use core::fmt;
 use std::collections::hash_map::{Entry, Iter};
 use std::collections::HashMap;
 
 use nom::{
     bytes::complete::tag,
-    character::{
-        complete::{digit1, space1},
-        streaming::line_ending,
-    },
-    combinator::map_res,
+    character::{complete::space1, streaming::line_ending},
     multi::many0,
     sequence::{terminated, tuple},
     IResult,
@@ -112,12 +109,8 @@ impl Pipes {
     }
 }
 
-fn from_dig(s: &str) -> IResult<&str, i32> {
-    map_res(digit1, |s: &str| i32::from_str_radix(s, 10))(s)
-}
-
 fn point(s: &str) -> IResult<&str, Point> {
-    let (rest, (x, _, y)) = tuple((from_dig, tag(","), from_dig))(s)?;
+    let (rest, (x, _, y)) = tuple((parser::from_dig, tag(","), parser::from_dig))(s)?;
     Ok((rest, Point::new(x, y)))
 }
 

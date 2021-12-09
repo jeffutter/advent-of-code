@@ -1,15 +1,9 @@
-use nom::{
-    bytes::complete::tag, character::complete::digit1, combinator::map_res, multi::separated_list1,
-    IResult,
-};
+use crate::parser;
+use nom::{bytes::complete::tag, multi::separated_list1};
 use std::collections::HashMap;
 
-fn from_dig(s: &str) -> IResult<&str, i32> {
-    map_res(digit1, |s: &str| i32::from_str_radix(s, 10))(s)
-}
-
-fn frisky_fish(data: String, days: usize) -> usize {
-    let (_rest, fish) = separated_list1(tag(","), from_dig)(&data).unwrap();
+fn frisky_fish(data: String, days: usize) -> u64 {
+    let (_rest, fish) = separated_list1(tag(","), parser::from_dig)(&data).unwrap();
 
     let mut school = HashMap::new();
 
@@ -40,13 +34,13 @@ fn frisky_fish(data: String, days: usize) -> usize {
             }
         }
     }
-    school.values().sum::<usize>()
+    school.values().sum::<u64>()
 }
 
-pub fn part1(data: String) -> usize {
+pub fn part1(data: String) -> u64 {
     frisky_fish(data, 80)
 }
 
-pub fn part2(data: String) -> usize {
+pub fn part2(data: String) -> u64 {
     frisky_fish(data, 256)
 }

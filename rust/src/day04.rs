@@ -1,14 +1,13 @@
+use crate::parser;
 use std::collections::HashMap;
 
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::digit0,
     character::complete::line_ending,
     character::complete::space0,
-    combinator::map_res,
     multi::many1,
-    multi::separated_list0,
+    multi::separated_list1,
     multi::{count, fold_many1},
     sequence::terminated,
     sequence::{preceded, tuple},
@@ -17,9 +16,9 @@ use nom::{
 
 #[derive(Debug, PartialEq, Eq)]
 struct BingoCard {
-    num_idx: HashMap<u32, (u32, u32)>,
-    row_counts: HashMap<u32, u32>,
-    column_counts: HashMap<u32, u32>,
+    num_idx: HashMap<i32, (i32, i32)>,
+    row_counts: HashMap<i32, i32>,
+    column_counts: HashMap<i32, i32>,
 }
 
 impl BingoCard {
@@ -31,7 +30,7 @@ impl BingoCard {
         }
     }
 
-    fn add(&mut self, col: u32, row: u32, v: u32) -> &mut Self {
+    fn add(&mut self, col: i32, row: i32, v: i32) -> &mut Self {
         self.num_idx.insert(v, (col, row));
         Self::incr(&mut self.row_counts, col);
         Self::incr(&mut self.column_counts, col);
@@ -39,11 +38,11 @@ impl BingoCard {
         self
     }
 
-    fn incr(hm: &mut HashMap<u32, u32>, n: u32) {
+    fn incr(hm: &mut HashMap<i32, i32>, n: i32) {
         hm.entry(n).and_modify(|x| *x += 1).or_insert(1);
     }
 
-    fn claim(&mut self, v: u32) -> bool {
+    fn claim(&mut self, v: i32) -> bool {
         match self.num_idx.remove(&v) {
             None => false,
             Some((col, row)) => {
@@ -55,26 +54,15 @@ impl BingoCard {
         }
     }
 
-    fn sum_remaining(&self) -> u32 {
+    fn sum_remaining(&self) -> i32 {
         self.num_idx.keys().sum()
     }
 }
 
-fn from_dig(s: &str) -> Result<u32, std::num::ParseIntError> {
-    u32::from_str_radix(s, 10)
-}
-
-fn from_digs(v: Vec<&str>) -> Result<Vec<u32>, std::num::ParseIntError> {
-    v.iter().map(|x| from_dig(*x)).collect()
-}
-
-fn sep_num_list(s: &str) -> IResult<&str, Vec<u32>> {
+fn sep_num_list(s: &str) -> IResult<&str, Vec<i32>> {
     preceded(
         space0,
-        map_res(
-            separated_list0(many1(alt((tag(","), tag(" ")))), digit0),
-            from_digs,
-        ),
+        separated_list1(many1(alt((tag(","), tag(" ")))), parser::from_dig),
     )(s)
 }
 
@@ -85,9 +73,9 @@ fn card(s: &str) -> IResult<&str, BingoCard> {
         fold_many1(
             terminated(sep_num_list, line_ending),
             || BingoCard::new(),
-            |mut card: BingoCard, row: Vec<u32>| {
+            |mut card: BingoCard, row: Vec<i32>| {
                 row.iter().enumerate().for_each(|(j, v)| {
-                    card.add(j as u32, i, *v);
+                    card.add(j as i32, i, *v);
                 });
 
                 i += 1;
@@ -104,11 +92,11 @@ fn cards(s: &str) -> IResult<&str, Vec<BingoCard>> {
     many1(card)(s)
 }
 
-fn header(s: &str) -> IResult<&str, Vec<u32>> {
+fn header(s: &str) -> IResult<&str, Vec<i32>> {
     terminated(sep_num_list, count(line_ending, 2))(s)
 }
 
-pub fn part1(data: String) -> u32 {
+pub fn part1(data: String) -> i32 {
     let (_rest, (header, mut tabs)) = tuple((header, cards))(&data).unwrap();
 
     for i in header {
@@ -122,7 +110,7 @@ pub fn part1(data: String) -> u32 {
     0
 }
 
-pub fn part2(data: String) -> u32 {
+pub fn part2(data: String) -> i32 {
     let (_rest, (header, mut tabs)) = tuple((header, cards))(&data).unwrap();
 
     for i in header {
