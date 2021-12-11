@@ -1,4 +1,4 @@
-use crate::parser::separated_digits;
+use parser::separated_digits;
 use std::collections::HashMap;
 
 fn frisky_fish(data: String, days: usize) -> u64 {

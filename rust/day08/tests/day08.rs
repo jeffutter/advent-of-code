@@ -1,5 +1,3 @@
-use aoc::*;
-
 const DATA: &str = "\
 be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe
 edbfga begcd cbg gc gcadebf fbgde acbgfd abcde gfcbed gfec | fcgedb cgb dgebacf gc
@@ -20,7 +18,7 @@ fn day08p01_sample() {
 
 #[test]
 fn day08p01() {
-    assert_eq!(day08::part1(util::read_input(8)), 554)
+    assert_eq!(day08::part1(util::read_input("../../inputs", 8)), 554)
 }
 
 #[test]
@@ -30,5 +28,5 @@ fn day08p02_sample() {
 
 #[test]
 fn day08p02() {
-    assert_eq!(day08::part2(util::read_input(8)), 990964)
+    assert_eq!(day08::part2(util::read_input("../../inputs", 8)), 990964)
 }

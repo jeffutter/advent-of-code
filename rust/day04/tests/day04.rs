@@ -1,5 +1,3 @@
-use aoc::*;
-
 const DATA: &str = "\
 7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
 
@@ -30,7 +28,7 @@ fn day04p01_sample() {
 
 #[test]
 fn day04p01() {
-    assert_eq!(day04::part1(util::read_input(4)), 49860)
+    assert_eq!(day04::part1(util::read_input("../../inputs", 4)), 49860)
 }
 
 #[test]
@@ -40,5 +38,5 @@ fn day04p02_sample() {
 
 #[test]
 fn day04p02() {
-    assert_eq!(day04::part2(util::read_input(4)), 24628)
+    assert_eq!(day04::part2(util::read_input("../../inputs", 4)), 24628)
 }

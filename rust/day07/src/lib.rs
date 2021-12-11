@@ -1,4 +1,4 @@
-use crate::parser::separated_digits;
+use parser::separated_digits;
 
 pub fn part1(data: String) -> i32 {
     let (_rest, mut positions) = separated_digits(&data).unwrap();

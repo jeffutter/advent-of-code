@@ -4,8 +4,8 @@ use std::fs::File;
 use std::io::Write;
 use ureq::AgentBuilder;
 
-pub fn read_input(day: usize) -> String {
-    let filename = format!("../inputs/day{:0>2}", day);
+pub fn read_input(prefix: &str, day: usize) -> String {
+    let filename = [prefix, &format!("day{:0>2}", day)].join("/");
 
     if !std::path::Path::new(&filename).exists() {
         let cookie_json = fs::read_to_string("../cookie.json")

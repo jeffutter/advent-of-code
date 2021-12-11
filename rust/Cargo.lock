@@ -6,10 +6,17 @@ version = 3
 name = "aoc"
 version = "0.1.0"
 dependencies = [
- "cookie",
- "cookie_store",
+ "day01",
+ "day02",
+ "day03",
+ "day04",
+ "day05",
+ "day06",
+ "day07",
+ "day08",
+ "day09",
  "nom",
- "ureq",
+ "util",
 ]
 
 [[package]]
@@ -92,6 +99,77 @@ dependencies = [
  "serde_json",
  "time",
  "url",
+]
+
+[[package]]
+name = "day01"
+version = "0.1.0"
+dependencies = [
+ "util",
+]
+
+[[package]]
+name = "day02"
+version = "0.1.0"
+dependencies = [
+ "util",
+]
+
+[[package]]
+name = "day03"
+version = "0.1.0"
+dependencies = [
+ "util",
+]
+
+[[package]]
+name = "day04"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "parser",
+ "util",
+]
+
+[[package]]
+name = "day05"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "parser",
+ "util",
+]
+
+[[package]]
+name = "day06"
+version = "0.1.0"
+dependencies = [
+ "parser",
+ "util",
+]
+
+[[package]]
+name = "day07"
+version = "0.1.0"
+dependencies = [
+ "parser",
+ "util",
+]
+
+[[package]]
+name = "day08"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "util",
+]
+
+[[package]]
+name = "day09"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "util",
 ]
 
 [[package]]
@@ -207,6 +285,13 @@ name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
+
+[[package]]
+name = "parser"
+version = "0.1.0"
+dependencies = [
+ "nom",
+]
 
 [[package]]
 name = "percent-encoding"
@@ -543,6 +628,15 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+]
+
+[[package]]
+name = "util"
+version = "0.1.0"
+dependencies = [
+ "cookie",
+ "cookie_store",
+ "ureq",
 ]
 
 [[package]]

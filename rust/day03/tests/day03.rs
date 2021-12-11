@@ -1,5 +1,3 @@
-use aoc::*;
-
 #[test]
 fn day03p01_sample() {
     let data = "\
@@ -21,7 +19,7 @@ fn day03p01_sample() {
 
 #[test]
 fn day03p01() {
-    assert_eq!(day03::part1(util::read_input(3)), 1540244)
+    assert_eq!(day03::part1(util::read_input("../../inputs", 3)), 1540244)
 }
 
 #[test]
@@ -45,5 +43,5 @@ fn day03p02_sample() {
 
 #[test]
 fn day03p02() {
-    assert_eq!(day03::part2(util::read_input(3)), 4203981)
+    assert_eq!(day03::part2(util::read_input("../../inputs", 3)), 4203981)
 }
