@@ -10,3 +10,6 @@ ureq = { version = "2.3.1", features = ["cookies"] }
 cookie_store = "0.15.1"
 cookie = "0.15.1"
 nom = { version = "7.1.0", features = ["alloc"] }
+
+[profile.dev]
+split-debuginfo = "unpacked"
