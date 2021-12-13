@@ -9,7 +9,6 @@ pub fn read_input(prefix: &str, day: usize) -> String {
     let cookiepath = [prefix, "cookie.json"].join("/");
 
     if !std::path::Path::new(&filename).exists() {
-        println!("Doesn't Exist");
         let cookie_json = fs::read_to_string(cookiepath).unwrap().replace("\n", "");
         let cookie_store = CookieStore::load_json(cookie_json.as_bytes()).unwrap();
 
