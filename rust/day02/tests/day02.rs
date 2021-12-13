@@ -13,7 +13,7 @@ fn day02p01_sample() {
 
 #[test]
 fn day02p01() {
-    assert_eq!(day02::part1(util::read_input("../../inputs", 2)), 1654760)
+    assert_eq!(day02::part1(util::read_input("../..", 2)), 1654760)
 }
 
 #[test]
@@ -31,8 +31,5 @@ fn day02p02_sample() {
 
 #[test]
 fn day02p02() {
-    assert_eq!(
-        day02::part2(util::read_input("../../inputs", 2)),
-        1956047400
-    )
+    assert_eq!(day02::part2(util::read_input("../..", 2)), 1956047400)
 }

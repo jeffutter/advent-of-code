@@ -5,12 +5,12 @@ use std::io::Write;
 use ureq::AgentBuilder;
 
 pub fn read_input(prefix: &str, day: usize) -> String {
-    let filename = [prefix, &format!("day{:0>2}", day)].join("/");
+    let filename = [prefix, &format!("inputs/day{:0>2}", day)].join("/");
+    let cookiepath = [prefix, "cookie.json"].join("/");
 
     if !std::path::Path::new(&filename).exists() {
-        let cookie_json = fs::read_to_string("../cookie.json")
-            .unwrap()
-            .replace("\n", "");
+        println!("Doesn't Exist");
+        let cookie_json = fs::read_to_string(cookiepath).unwrap().replace("\n", "");
         let cookie_store = CookieStore::load_json(cookie_json.as_bytes()).unwrap();
 
         let url = format!("https://adventofcode.com/{:0>4}/day/{}/input", 2021, day);
