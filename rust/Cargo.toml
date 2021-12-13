@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nom = { version = "7.1.0", features = ["alloc"] }
 day01 = { path = "./day01" }
 day02 = { path = "./day02" }
 day03 = { path = "./day03" }
@@ -17,6 +16,7 @@ day07 = { path = "./day07" }
 day08 = { path = "./day08" }
 day09 = { path = "./day09" }
 day10 = { path = "./day10" }
+day11 = { path = "./day11" }
 util = { path = "./util" }
 
 [workspace]
@@ -34,6 +34,7 @@ members = [
     "day08",
     "day09",
     "day10",
+    "day11",
 ]
 
 [profile.dev]
