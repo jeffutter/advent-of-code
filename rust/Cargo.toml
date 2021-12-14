@@ -17,7 +17,9 @@ day08 = { path = "./day08" }
 day09 = { path = "./day09" }
 day10 = { path = "./day10" }
 day11 = { path = "./day11" }
+day12 = { path = "./day12" }
 util = { path = "./util" }
+num-format = "0.4.0"
 
 [workspace]
 
@@ -35,6 +37,7 @@ members = [
     "day09",
     "day10",
     "day11",
+    "day12",
 ]
 
 [profile.dev]
