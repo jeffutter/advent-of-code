@@ -18,15 +18,15 @@ fn day18p01_sample() {
 
 #[test]
 fn day18p01() {
-    assert_eq!(day18::part1(util::read_input("../..", 18)), 0)
+    assert_eq!(day18::part1(util::read_input("../..", 18)), 3411)
 }
 
 #[test]
 fn day18p02_sample() {
-    assert_eq!(day18::part2(DATA.to_string()), 0)
+    assert_eq!(day18::part2(DATA.to_string()), 3993)
 }
 
 #[test]
 fn day18p02() {
-    assert_eq!(day18::part2(util::read_input("../..", 18)), 0)
+    assert_eq!(day18::part2(util::read_input("../..", 18)), 4680)
 }
