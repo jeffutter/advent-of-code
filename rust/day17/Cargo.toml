@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 util = { path = "../util" }
 nom = { version = "7.1.0", features = ["alloc"] }
+parser = { path = "../parser" }

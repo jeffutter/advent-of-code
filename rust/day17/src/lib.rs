@@ -2,8 +2,6 @@ use std::collections::HashSet;
 
 use nom::{
     bytes::complete::tag,
-    character::complete::{char, digit1},
-    combinator::{map_res, opt, recognize},
     sequence::{preceded, separated_pair, terminated, tuple},
     IResult,
 };
@@ -55,14 +53,8 @@ impl Target {
     }
 }
 
-fn signed_dig(s: &str) -> IResult<&str, i32> {
-    map_res(recognize(tuple((opt(char('-')), digit1))), |s: &str| {
-        i32::from_str_radix(s, 10)
-    })(s)
-}
-
 fn range(s: &str) -> IResult<&str, (i32, i32)> {
-    separated_pair(signed_dig, tag(".."), signed_dig)(s)
+    separated_pair(parser::signed_dig, tag(".."), parser::signed_dig)(s)
 }
 
 fn parse_input(data: String) -> Target {
