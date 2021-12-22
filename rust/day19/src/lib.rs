@@ -36,17 +36,17 @@ impl Beacon {
             z: z2,
         } = beacon;
 
-        (x2 - x1, y2 - y1, z2 - z1)
+        (x1 - x2, y1 - y2, z1 - z2)
     }
 
     fn translate(&mut self, (dx, dy, dz): &(i32, i32, i32)) {
-        self.x -= dx;
-        self.y -= dy;
-        self.z -= dz;
+        self.x += dx;
+        self.y += dy;
+        self.z += dz;
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct Report(HashSet<Beacon>);
 
 impl Report {
@@ -85,7 +85,7 @@ impl Report {
         report
     }
 
-    fn merge(&mut self, report: &Report) -> bool {
+    fn merge(&mut self, report: &Report) -> Option<(i32, i32, i32)> {
         let translated_candidate = report.rotation_iter().find_map(|candidate| {
             let distance_counts: HashMap<(i32, i32, i32), i32> = self
                 .iter()
@@ -99,9 +99,8 @@ impl Report {
             let translation = distance_counts.iter().max_by_key(|(_k, v)| *v);
 
             if let Some((translation, count)) = translation {
-                println!("count: {}", count);
                 if count >= &12 {
-                    Some(candidate.translated(translation))
+                    Some((candidate.translated(translation), translation.clone()))
                 } else {
                     None
                 }
@@ -110,14 +109,13 @@ impl Report {
             }
         });
 
-        if let Some(candidate) = translated_candidate {
+        if let Some((candidate, translation)) = translated_candidate {
             for beacon in candidate.iter() {
                 self.insert(beacon.clone());
             }
-            true
+            Some(translation)
         } else {
-            println!("NONE");
-            false
+            None
         }
     }
 }
@@ -204,34 +202,42 @@ fn parse(data: String) -> Vec<Report> {
 }
 
 pub fn part1(data: String) -> usize {
-    // let mut reports = parse(data);
-    // let mut combined_report = reports.pop().unwrap();
-
-    // while !reports.is_empty() {
-    //     let report = reports.pop().unwrap();
-    //     if !combined_report.merge(&report) {
-    //         reports.push(report)
-    //     }
-    // }
-
-    // combined_report.0.len()
-
     let mut reports = parse(data);
-    println!("Reports: {}", reports.len());
-    let mut report_iter = reports.iter_mut();
-    let combined_report = report_iter.next().unwrap();
+    let mut combined_report = reports.pop().unwrap();
 
-    println!("report_len: {}", combined_report.0.len());
-    for report in report_iter {
-        combined_report.merge(report);
-        println!("report_len: {}", combined_report.0.len());
+    while !reports.is_empty() {
+        let report = reports.remove(0);
+
+        if combined_report.merge(&report).is_some() {
+        } else {
+            reports.push(report)
+        }
     }
 
     combined_report.0.len()
 }
 
-pub fn part2(_data: String) -> i32 {
-    0
+pub fn part2(data: String) -> i32 {
+    let mut reports = parse(data);
+    let mut combined_report = reports.pop().unwrap();
+
+    let mut offsets: Vec<(i32, i32, i32)> = Vec::new();
+    while !reports.is_empty() {
+        let report = reports.remove(0);
+
+        if let Some(offset) = combined_report.merge(&report) {
+            offsets.push(offset)
+        } else {
+            reports.push(report)
+        }
+    }
+
+    offsets
+        .iter()
+        .cartesian_product(offsets.iter())
+        .map(|(a, b)| (a.0 - b.0).abs() + (a.1 - b.1).abs() + (a.2 - b.2).abs())
+        .max()
+        .unwrap()
 }
 
 #[cfg(test)]

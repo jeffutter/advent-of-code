@@ -149,7 +149,7 @@ fn day19p01() {
 
 #[test]
 fn day19p02_sample() {
-    assert_eq!(day19::part2(DATA.to_string()), 0)
+    assert_eq!(day19::part2(DATA.to_string()), 3621)
 }
 
 #[test]
