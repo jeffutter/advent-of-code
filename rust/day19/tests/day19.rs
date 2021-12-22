@@ -154,5 +154,5 @@ fn day19p02_sample() {
 
 #[test]
 fn day19p02() {
-    assert_eq!(day19::part2(util::read_input("../..", 19)), 0)
+    assert_eq!(day19::part2(util::read_input("../..", 19)), 13184)
 }
