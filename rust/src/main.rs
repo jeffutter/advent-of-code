@@ -20,4 +20,5 @@ generate_main!(
     day16
     day17
     day18
+    day19
 );

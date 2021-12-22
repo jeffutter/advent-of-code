@@ -24,6 +24,7 @@ day15 = { path = "./day15" }
 day16 = { path = "./day16" }
 day17 = { path = "./day17" }
 day18 = { path = "./day18" }
+day19 = { path = "./day19" }
 util = { path = "./util" }
 num-format = "0.4.0"
 
@@ -50,6 +51,7 @@ members = [
     "day16",
     "day17",
     "day18",
+    "day19",
 ]
 
 [profile.dev]
