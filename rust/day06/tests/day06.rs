@@ -17,8 +17,5 @@ fn day06p02_sample() {
 
 #[test]
 fn day06p02() {
-    assert_eq!(
-        day06::part2(util::read_input("../..", 6)),
-        1634946868992u64
-    )
+    assert_eq!(day06::part2(util::read_input("../..", 6)), 1634946868992u64)
 }
