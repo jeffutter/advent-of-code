@@ -26,6 +26,7 @@ dependencies = [
  "day18",
  "day19",
  "day20",
+ "day21",
  "num-format",
  "util",
 ]
@@ -281,6 +282,15 @@ name = "day20"
 version = "0.1.0"
 dependencies = [
  "nom",
+ "util",
+]
+
+[[package]]
+name = "day21"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "parser",
  "util",
 ]
 
