@@ -20,12 +20,12 @@ macro_rules! generate_main {
 
             $(
               let day_s = stringify!($mod_name).trim_start_matches("day");
-              let day = usize::from_str_radix(day_s, 10).unwrap();
+              let day = day_s.parse::<u32>().unwrap();
 
-              let (res, duration) = measure_time(|| $mod_name::part1(util::read_input("..", day)));
+              let (res, duration) = measure_time(|| $mod_name::part1(util::read_input("..", 2022, day)));
               println!("Day{:0>2}-01 {: >10}μs:\t{}", day, duration.as_micros().to_formatted_string(&Locale::en), res);
 
-              let (res, duration) = measure_time(|| $mod_name::part2(util::read_input("..", day)));
+              let (res, duration) = measure_time(|| $mod_name::part2(util::read_input("..", 2022, day)));
               println!("Day{:0>2}-02 {: >10}μs:\t{}", day, duration.as_micros().to_formatted_string(&Locale::en), res);
             )*
         }

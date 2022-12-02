@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 ureq = { version = "2.3.1", features = ["cookies"] }
+chrono = "0.4"
+chrono-tz = "0.8"

@@ -1,9 +1,18 @@
+use chrono::{DateTime, TimeZone, Utc};
+use chrono_tz::US::Eastern;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use ureq::AgentBuilder;
 
-pub fn read_input(prefix: &str, day: usize) -> String {
+pub fn read_input(prefix: &str, year: i32, day: u32) -> String {
+    let utc_now: DateTime<Utc> = chrono::Utc::now();
+    let start = Eastern.with_ymd_and_hms(year, 12, day, 0, 0, 0).unwrap();
+
+    if start >= utc_now {
+        panic!("It's not time yet, can't fetch: {}", day);
+    }
+
     let filename = [prefix, &format!("inputs/day{:0>2}", day)].join("/");
     let cookiepath = [prefix, "cookie"].join("/");
 
