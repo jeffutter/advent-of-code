@@ -4,7 +4,7 @@ pub(crate) mod module;
 generate_main!(
     day01
     day02
-    // day03
+    day03
     // day04
     // day05
     // day06
