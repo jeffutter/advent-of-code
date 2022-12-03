@@ -1,16 +1,16 @@
-pub fn part1(data: String) -> i32 {
-    group_by_elves(&data).max().unwrap()
+pub fn part1(elves: impl Iterator<Item = i32>) -> i32 {
+    elves.max().unwrap()
 }
 
-pub fn part2(data: String) -> i32 {
-    let mut calories: Vec<i32> = group_by_elves(&data).collect();
+pub fn part2(elves: impl Iterator<Item = i32>) -> i32 {
+    let mut calories: Vec<i32> = elves.collect();
 
     calories.sort();
 
     calories.iter().rev().take(3).sum()
 }
 
-fn group_by_elves<'a>(data: &'a str) -> impl Iterator<Item = i32> + 'a {
+pub fn parse<'a>(data: &'a str) -> impl Iterator<Item = i32> + 'a {
     let mut t: i32 = 0;
     let mut v: Vec<i32> = vec![];
     for n in data.lines() {

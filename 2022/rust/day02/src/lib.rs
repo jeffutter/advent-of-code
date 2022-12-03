@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, str::Lines};
 
 #[derive(Debug, Clone, PartialEq)]
 enum Choice {
@@ -158,15 +158,19 @@ impl Round {
     }
 }
 
-pub fn part1(data: String) -> i32 {
+pub fn parse<'a>(data: &'a str) -> Lines<'a> {
     data.lines()
+}
+
+pub fn part1(lines: Lines) -> i32 {
+    lines
         .map(|l| Round::from_str(l))
         .map(|round| round.grade())
         .sum()
 }
 
-pub fn part2(data: String) -> i32 {
-    data.lines()
+pub fn part2(lines: Lines) -> i32 {
+    lines
         .map(|l| Round::cheat_from_str(l))
         .map(|round| round.grade())
         .sum()
