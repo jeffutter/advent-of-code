@@ -18,6 +18,7 @@ dependencies = [
  "day01",
  "day02",
  "day03",
+ "day04",
  "num-format",
  "util",
 ]
@@ -229,6 +230,15 @@ name = "day03"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
+ "util",
+]
+
+[[package]]
+name = "day04"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "parser",
  "util",
 ]
 
