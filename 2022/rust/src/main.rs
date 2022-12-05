@@ -1,5 +1,6 @@
 #[macro_use]
 pub(crate) mod module;
+pub(crate) mod test;
 
 generate_main!(
     day01
