@@ -23,6 +23,7 @@ dependencies = [
  "day06",
  "day07",
  "day08",
+ "day09",
  "num-format",
  "util",
 ]
@@ -275,6 +276,14 @@ dependencies = [
 
 [[package]]
 name = "day08"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "util",
+]
+
+[[package]]
+name = "day09"
 version = "0.1.0"
 dependencies = [
  "itertools",
