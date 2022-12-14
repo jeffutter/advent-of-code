@@ -4,12 +4,20 @@ use std::{
     fmt,
 };
 
+use itertools::Itertools;
+
 pub fn part1<'a>(map: Map) -> u32 {
     shortest_path(&map, map.start, map.end).unwrap()
 }
 
-pub fn part2<'a>(map: Map) -> i32 {
-    1
+pub fn part2<'a>(map: Map) -> u32 {
+    map.points
+        .iter()
+        .filter(|(_, val)| **val == 0)
+        .filter_map(|(pos, _)| shortest_path(&map, *pos, map.end))
+        .sorted()
+        .nth(0)
+        .unwrap()
 }
 
 pub fn parse<'a>(data: &'a str) -> Map {
