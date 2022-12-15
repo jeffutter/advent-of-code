@@ -1,6 +1,8 @@
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
-use itertools::Itertools;
 use nom::{
     bytes::complete::tag, character::complete::newline, multi::separated_list1, sequence::tuple,
     IResult,
@@ -21,19 +23,24 @@ fn _do_part1(map: Map, target: i32) -> usize {
     res
 }
 
-pub fn part2(map: Map) -> i32 {
+pub fn part2(map: Map) -> i64 {
     _do_part2(map, 4000000)
 }
 
-fn _do_part2(map: Map, max: i32) -> i32 {
-    let pos = (0..=max)
-        .cartesian_product(0..=max)
-        .map(|(x, y)| Pos::new(x, y))
+fn _do_part2(map: Map, max: i32) -> i64 {
+    let pos = map
+        .edge_points()
+        .into_iter()
+        .filter(|pos| pos.x >= 0)
+        .filter(|pos| pos.y >= 0)
+        .filter(|pos| pos.x <= max)
+        .filter(|pos| pos.y <= max)
         .filter(|pos| !map.sensors.contains_key(pos))
-        .filter(|pos| !map.sensors.iter().any(|(_, sensor)| sensor.beacon == *pos))
+        .filter(|pos| !map.sensors.values().any(|s| s.beacon == *pos))
         .find(|pos| !map.covers(&pos))
         .unwrap();
-    (pos.x * 4000000) + pos.y
+
+    (pos.x as i64 * 4000000) + pos.y as i64
 }
 
 pub fn parse<'a>(data: &'a str) -> Map {
@@ -109,8 +116,17 @@ impl Map {
         self.sensors.insert(sensor.pos.clone(), sensor);
     }
 
-    pub fn covers(&self, pos: &Pos) -> bool {
-        self.sensors.iter().any(|(_, sensor)| sensor.covers(&pos))
+    fn covers(&self, pos: &Pos) -> bool {
+        self.sensors.values().any(|sensor| sensor.covers(&pos))
+    }
+
+    fn edge_points(&self) -> HashSet<Pos> {
+        self.sensors
+            .values()
+            .fold(HashSet::new(), |mut hs, sensor| {
+                hs.extend(sensor.surrounding_points());
+                hs
+            })
     }
 }
 
@@ -154,7 +170,7 @@ impl Sensor {
         }
     }
 
-    pub fn covers(&self, pos: &Pos) -> bool {
+    fn covers(&self, pos: &Pos) -> bool {
         if self.pos == *pos {
             return false;
         }
@@ -163,9 +179,49 @@ impl Sensor {
         }
         self.pos.distance(pos) <= self.distance
     }
+
+    fn surrounding_points(&self) -> HashSet<Pos> {
+        let top = self.pos.y - self.distance;
+        let right = self.pos.x + self.distance;
+        let bottom = self.pos.y + self.distance;
+        let left = self.pos.x - self.distance;
+
+        let top_right_points = (self.pos.x..=right + 1)
+            .zip((top - 1)..=self.pos.y)
+            .map(|(x, y)| Pos::new(x, y));
+
+        let bottom_right_points = (self.pos.x..=right + 1)
+            .zip((self.pos.y..=(bottom + 1)).rev())
+            .map(|(x, y)| Pos::new(x, y));
+
+        let top_left_points = ((left - 1)..=self.pos.x)
+            .zip(((top - 1)..=self.pos.y).rev())
+            .map(|(x, y)| Pos::new(x, y));
+
+        let bottom_left_points = ((left - 1)..=self.pos.x)
+            .zip(self.pos.y..=bottom + 1)
+            .map(|(x, y)| Pos::new(x, y));
+
+        let mut hs = HashSet::new();
+
+        for pos in top_right_points {
+            hs.insert(pos);
+        }
+        for pos in bottom_right_points {
+            hs.insert(pos);
+        }
+        for pos in bottom_left_points {
+            hs.insert(pos);
+        }
+        for pos in top_left_points {
+            hs.insert(pos);
+        }
+
+        hs
+    }
 }
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub struct Pos {
     x: i32,
     y: i32,
@@ -231,5 +287,31 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3"#;
         let parsed = parse(input);
         let res = _do_part2(parsed, 20);
         assert_eq!(56000011, res)
+    }
+
+    #[test]
+    fn test_surrounding_points() {
+        let sensor = Sensor::new(3, 3, 2, 2);
+        println!("{:?}", sensor);
+        let points = sensor.surrounding_points();
+        assert_eq!(
+            vec![
+                Pos::new(3, 0),
+                Pos::new(4, 1),
+                Pos::new(5, 2),
+                Pos::new(6, 3),
+                Pos::new(5, 4),
+                Pos::new(4, 5),
+                Pos::new(3, 6),
+                Pos::new(2, 5),
+                Pos::new(1, 4),
+                Pos::new(0, 3),
+                Pos::new(1, 2),
+                Pos::new(2, 1),
+            ]
+            .into_iter()
+            .collect::<HashSet<_>>(),
+            points
+        )
     }
 }
