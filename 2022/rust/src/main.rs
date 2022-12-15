@@ -1,8 +1,6 @@
-#[macro_use]
-pub(crate) mod module;
 pub(crate) mod test;
 
-generate_main!(
+util::generate_main!(
     day01
     day02
     day03

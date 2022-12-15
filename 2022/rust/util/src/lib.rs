@@ -3,9 +3,10 @@ use chrono_tz::US::Eastern;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use ureq::AgentBuilder;
 
-pub fn read_input(prefix: &str, year: i32, day: u32) -> String {
+pub fn read_input(year: i32, day: u32) -> String {
     let utc_now: DateTime<Utc> = chrono::Utc::now();
     let start = Eastern.with_ymd_and_hms(year, 12, day, 0, 0, 0).unwrap();
 
@@ -13,11 +14,18 @@ pub fn read_input(prefix: &str, year: i32, day: u32) -> String {
         panic!("It's not time yet, can't fetch: {}", day);
     }
 
-    let filename = [prefix, &format!("inputs/day{:0>2}", day)].join("/");
-    let cookiepath = [prefix, "cookie"].join("/");
+    let workspace_root = std::env!("CARGO_WORKSPACE_DIR");
 
-    if !std::path::Path::new(&filename).exists() {
-        let session_cookie = fs::read_to_string(cookiepath).unwrap();
+    let file = Path::new(&workspace_root)
+        .join(year.to_string())
+        .join(format!("inputs/day{:0>2}", day));
+
+    let cookie = Path::new(&workspace_root)
+        .join(year.to_string())
+        .join("cookie");
+
+    if !file.exists() {
+        let session_cookie = fs::read_to_string(cookie).expect("Cookie Not Found");
 
         let url = format!("https://adventofcode.com/{:0>4}/day/{}/input", 2022, day);
 
@@ -30,11 +38,55 @@ pub fn read_input(prefix: &str, year: i32, day: u32) -> String {
             .into_string()
             .unwrap();
 
-        let mut writer = File::create(&filename).unwrap();
+        let mut writer = File::create(&file).unwrap();
         write!(writer, "{}", body).unwrap();
     }
 
-    std::fs::read_to_string(&filename).unwrap()
+    std::fs::read_to_string(&file).unwrap()
+}
+
+pub extern crate num_format;
+
+#[macro_export]
+macro_rules! generate_main {
+    ($($mod_name:ident)*) => {
+        use util;
+        use std::time::{Duration, Instant};
+        use $crate::num_format::{Locale, ToFormattedString};
+
+        fn measure_time<T, F: Fn() -> T>(func: F) -> (T, Duration) {
+            let start = Instant::now();
+            let res = func();
+            let duration = start.elapsed();
+            (res, duration)
+        }
+
+        $(
+            use $mod_name;
+        )*
+
+        fn main() {
+
+            $(
+              let day_s = stringify!($mod_name).trim_start_matches("day");
+              let day = day_s.parse::<u32>().unwrap();
+
+              let (res, duration) = measure_time(|| {
+                let input = util::read_input(2022, day);
+                let parsed = $mod_name::parse(&input);
+                $mod_name::part1(parsed)
+              });
+              println!("Day{:0>2}-01 {: >10}μs:\t{}", day, duration.as_micros().to_formatted_string(&Locale::en), res);
+
+              let (res, duration) = measure_time(|| {
+                let input = util::read_input(2022, day);
+                let parsed = $mod_name::parse(&input);
+                $mod_name::part2(parsed)
+              });
+              println!("Day{:0>2}-02 {: >10}μs:\t{}", day, duration.as_micros().to_formatted_string(&Locale::en), res);
+            )*
+        }
+    };
 }
 
 #[macro_export]
@@ -46,14 +98,14 @@ macro_rules! generate_tests {
 
         #[test]
         fn test_part1() {
-            let input = util::read_input("../..", $year, $day);
+            let input = util::read_input($year, $day);
             let data = $mod::parse(&input);
             assert_eq!($mod::part1(data), $result1)
         }
 
         #[test]
         fn test_part2() {
-            let input = util::read_input("../..", $year, $day);
+            let input = util::read_input($year, $day);
             let data = $mod::parse(&input);
             assert_eq!($mod::part2(data), $result2)
         }
