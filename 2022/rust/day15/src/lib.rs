@@ -5,6 +5,8 @@ use nom::{
     IResult,
 };
 
+use rayon::prelude::*;
+
 pub fn part1(map: Map) -> usize {
     _do_part1(map, 2000000)
 }
@@ -35,7 +37,7 @@ fn _do_part2(map: Map, max: i32) -> i64 {
                 && !map.sensors.contains_key(pos)
                 && !map.sensors.values().any(|s| s.beacon == *pos)
         })
-        .find(|pos| !map.covers(&pos))
+        .find_any(|pos| !map.covers(&pos))
         .unwrap();
 
     (pos.x as i64 * 4000000) + pos.y as i64
@@ -118,9 +120,10 @@ impl Map {
         self.sensors.values().any(|sensor| sensor.covers(&pos))
     }
 
-    fn edge_points(&self) -> impl Iterator<Item = Pos> + '_ {
+    fn edge_points(&self) -> impl ParallelIterator<Item = Pos> + '_ {
         self.sensors
             .values()
+            .par_bridge()
             .flat_map(|sensor| sensor.surrounding_points())
     }
 }
@@ -175,7 +178,7 @@ impl Sensor {
         self.pos.distance(pos) <= self.distance
     }
 
-    fn surrounding_points(&self) -> impl Iterator<Item = Pos> {
+    fn surrounding_points(&self) -> impl ParallelIterator<Item = Pos> {
         let top = self.pos.y - self.distance;
         let right = self.pos.x + self.distance;
         let bottom = self.pos.y + self.distance;
@@ -201,6 +204,7 @@ impl Sensor {
             .chain(bottom_right_points)
             .chain(bottom_left_points)
             .chain(top_left_points)
+            .par_bridge()
     }
 }
 
