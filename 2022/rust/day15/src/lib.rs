@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-};
+use std::{collections::HashMap, fmt};
 
 use nom::{
     bytes::complete::tag, character::complete::newline, multi::separated_list1, sequence::tuple,
@@ -30,13 +27,14 @@ pub fn part2(map: Map) -> i64 {
 fn _do_part2(map: Map, max: i32) -> i64 {
     let pos = map
         .edge_points()
-        .into_iter()
-        .filter(|pos| pos.x >= 0)
-        .filter(|pos| pos.y >= 0)
-        .filter(|pos| pos.x <= max)
-        .filter(|pos| pos.y <= max)
-        .filter(|pos| !map.sensors.contains_key(pos))
-        .filter(|pos| !map.sensors.values().any(|s| s.beacon == *pos))
+        .filter(|pos| {
+            0 <= pos.x
+                && pos.x <= max
+                && 0 <= pos.y
+                && pos.y <= max
+                && !map.sensors.contains_key(pos)
+                && !map.sensors.values().any(|s| s.beacon == *pos)
+        })
         .find(|pos| !map.covers(&pos))
         .unwrap();
 
@@ -120,13 +118,10 @@ impl Map {
         self.sensors.values().any(|sensor| sensor.covers(&pos))
     }
 
-    fn edge_points(&self) -> HashSet<Pos> {
+    fn edge_points(&self) -> impl Iterator<Item = Pos> + '_ {
         self.sensors
             .values()
-            .fold(HashSet::new(), |mut hs, sensor| {
-                hs.extend(sensor.surrounding_points());
-                hs
-            })
+            .flat_map(|sensor| sensor.surrounding_points())
     }
 }
 
@@ -180,7 +175,7 @@ impl Sensor {
         self.pos.distance(pos) <= self.distance
     }
 
-    fn surrounding_points(&self) -> HashSet<Pos> {
+    fn surrounding_points(&self) -> impl Iterator<Item = Pos> {
         let top = self.pos.y - self.distance;
         let right = self.pos.x + self.distance;
         let bottom = self.pos.y + self.distance;
@@ -202,22 +197,10 @@ impl Sensor {
             .zip(self.pos.y..=bottom + 1)
             .map(|(x, y)| Pos::new(x, y));
 
-        let mut hs = HashSet::new();
-
-        for pos in top_right_points {
-            hs.insert(pos);
-        }
-        for pos in bottom_right_points {
-            hs.insert(pos);
-        }
-        for pos in bottom_left_points {
-            hs.insert(pos);
-        }
-        for pos in top_left_points {
-            hs.insert(pos);
-        }
-
-        hs
+        top_right_points
+            .chain(bottom_right_points)
+            .chain(bottom_left_points)
+            .chain(top_left_points)
     }
 }
 
@@ -245,6 +228,8 @@ impl fmt::Debug for Pos {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]
@@ -292,7 +277,6 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3"#;
     #[test]
     fn test_surrounding_points() {
         let sensor = Sensor::new(3, 3, 2, 2);
-        println!("{:?}", sensor);
         let points = sensor.surrounding_points();
         assert_eq!(
             vec![
@@ -311,7 +295,7 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3"#;
             ]
             .into_iter()
             .collect::<HashSet<_>>(),
-            points
+            points.into_iter().collect::<HashSet<_>>()
         )
     }
 }
