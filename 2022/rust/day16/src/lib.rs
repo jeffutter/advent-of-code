@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 use nom::{
@@ -11,7 +11,33 @@ use nom::{
 };
 
 pub fn part1(v: Valves) -> u32 {
-    // let vertices = &v.0.keys().cloned().collect::<Vec<_>>()[..];
+    let valves =
+        v.0.values()
+            .sorted_by_key(|x| x.flow_rate)
+            .rev()
+            .collect_vec();
+    let positive_flow = valves
+        .iter()
+        .filter_map(|x| {
+            if x.flow_rate > 0 {
+                return Some(x.name);
+            }
+            None
+        })
+        .collect_vec();
+    let lab2idx = valves
+        .iter()
+        .enumerate()
+        .map(|(i, v)| (v.name, i))
+        .collect::<HashMap<_, _>>();
+    let mm: usize = 1 << positive_flow.len();
+
+    let opt = generate_matrix(v);
+
+    opt[29][lab2idx["AA"]][mm - 1]
+}
+
+fn generate_matrix(v: Valves) -> Vec<Vec<Vec<u32>>> {
     let valves =
         v.0.values()
             .sorted_by_key(|x| x.flow_rate)
@@ -44,34 +70,59 @@ pub fn part1(v: Valves) -> u32 {
         }
     }
 
-    let mut opt: HashMap<(u32, usize, u32), u32> = HashMap::new();
-    let mm: u32 = 1 << positive_flow.len();
+    let mm: usize = 1 << positive_flow.len();
+    let mut opt: Vec<Vec<Vec<u32>>> = vec![vec![vec![0; mm]; v.0.len()]; 30];
+
     for t in 1..30 {
         for i in 0..v.0.len() {
             let ii: u64 = 1 << i;
             for x in 0..mm {
-                let idx = (t, i, x);
-                let mut o = opt.get(&idx).unwrap_or(&0).clone();
+                let mut o = opt[t][i][x];
                 if ii & (x as u64) != 0 && t >= 2 {
-                    let idx2 = (t - 1, i, ((x as u64) - ii) as u32);
-                    let val = opt.get(&idx2).unwrap_or(&0) + flow[i] * t;
+                    let val = opt[t - 1][i][((x as u64) - ii) as usize] + flow[i] * (t as u32);
                     o = o.max(val);
                 }
                 for &j in adj[i].iter() {
-                    let idx2 = (t - 1, j, x);
-                    let val = opt.get(&idx2).unwrap_or(&0).clone();
+                    let val = opt[t - 1][j][x];
                     o = o.max(val);
                 }
-                opt.insert(idx, o);
+                opt[t][i][x] = o;
             }
         }
     }
 
-    opt.get(&(29u32, lab2idx["AA"], mm - 1)).unwrap().clone()
+    opt
 }
 
-pub fn part2(v: Valves) -> i32 {
-    1
+pub fn part2(v: Valves) -> u32 {
+    let valves =
+        v.0.values()
+            .sorted_by_key(|x| x.flow_rate)
+            .rev()
+            .collect_vec();
+    let positive_flow = valves
+        .iter()
+        .filter_map(|x| {
+            if x.flow_rate > 0 {
+                return Some(x.name);
+            }
+            None
+        })
+        .collect_vec();
+    let lab2idx = valves
+        .iter()
+        .enumerate()
+        .map(|(i, v)| (v.name, i))
+        .collect::<HashMap<_, _>>();
+    let mm: usize = 1 << positive_flow.len();
+    let opt = generate_matrix(v);
+
+    let mut best = 0;
+    for x in 0..mm / 2 {
+        let y = mm - 1 - x;
+        best = best.max(opt[25][lab2idx["AA"]][x] + opt[25][lab2idx["AA"]][y]);
+    }
+    best
 }
 
 pub fn parse<'a>(data: &'a str) -> Valves {
