@@ -1,85 +1,44 @@
 use std::collections::HashMap;
 
-use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, newline},
+    character::complete::{alpha1, digit1, newline},
+    combinator::map_res,
     multi::separated_list1,
     sequence::tuple,
     IResult,
 };
 
-pub fn part1(v: Valves) -> u32 {
-    let valves =
-        v.0.values()
-            .sorted_by_key(|x| x.flow_rate)
-            .rev()
-            .collect_vec();
-    let positive_flow = valves
-        .iter()
-        .filter_map(|x| {
-            if x.flow_rate > 0 {
-                return Some(x.name);
-            }
-            None
-        })
-        .collect_vec();
-    let lab2idx = valves
-        .iter()
-        .enumerate()
-        .map(|(i, v)| (v.name, i))
-        .collect::<HashMap<_, _>>();
-    let mm: usize = 1 << positive_flow.len();
+pub fn part1(v: Valves) -> u16 {
+    let mm: usize = 1 << v.positive_flow().count();
 
-    let opt = generate_matrix(v);
+    let opt = generate_matrix(&v);
 
-    opt[29][lab2idx["AA"]][mm - 1]
+    opt[29][v.idx_by_name("AA").unwrap()][mm - 1]
 }
 
-fn generate_matrix(v: Valves) -> Vec<Vec<Vec<u32>>> {
-    let valves =
-        v.0.values()
-            .sorted_by_key(|x| x.flow_rate)
-            .rev()
-            .collect_vec();
-
-    let lab2idx = valves
-        .iter()
-        .enumerate()
-        .map(|(i, v)| (v.name, i))
-        .collect::<HashMap<_, _>>();
-
-    let positive_flow = valves
-        .iter()
-        .filter_map(|x| {
-            if x.flow_rate > 0 {
-                return Some(x.name);
-            }
-            None
-        })
-        .collect_vec();
-
-    let mut adj = vec![vec![0usize; 0]; valves.len()];
-    let mut flow = vec![0u32; valves.len()];
-    for v in valves {
-        let i = lab2idx[v.name];
-        flow[i] = v.flow_rate;
-        for w in v.connections.iter() {
-            adj[i].push(lab2idx[w]);
+fn generate_matrix(v: &Valves) -> Vec<Vec<Vec<u16>>> {
+    let mut adj = vec![vec![0usize; 0]; v.len()];
+    let mut flow = vec![0u16; v.len()];
+    for vx in v.iter() {
+        let i = v.idx_by_name(vx.name).unwrap();
+        flow[i] = vx.flow_rate;
+        for w in vx.connections.iter() {
+            adj[i].push(v.idx_by_name(w).unwrap());
         }
     }
 
-    let mm: usize = 1 << positive_flow.len();
-    let mut opt: Vec<Vec<Vec<u32>>> = vec![vec![vec![0; mm]; v.0.len()]; 30];
+    let mm: usize = 1 << v.positive_flow().count();
+    let mut opt: Vec<Vec<Vec<u16>>> = vec![vec![vec![0; mm]; v.len()]; 30];
 
     for t in 1..30 {
-        for i in 0..v.0.len() {
+        for i in 0..v.len() {
             let ii: u64 = 1 << i;
             for x in 0..mm {
                 let mut o = opt[t][i][x];
                 if ii & (x as u64) != 0 && t >= 2 {
-                    let val = opt[t - 1][i][((x as u64) - ii) as usize] + flow[i] * (t as u32);
+                    let val = opt[t - 1][i][((x as u64) - ii) as usize] + flow[i] * (t as u16);
                     o = o.max(val);
                 }
                 for &j in adj[i].iter() {
@@ -94,47 +53,31 @@ fn generate_matrix(v: Valves) -> Vec<Vec<Vec<u32>>> {
     opt
 }
 
-pub fn part2(v: Valves) -> u32 {
-    let valves =
-        v.0.values()
-            .sorted_by_key(|x| x.flow_rate)
-            .rev()
-            .collect_vec();
-    let positive_flow = valves
-        .iter()
-        .filter_map(|x| {
-            if x.flow_rate > 0 {
-                return Some(x.name);
-            }
-            None
-        })
-        .collect_vec();
-    let lab2idx = valves
-        .iter()
-        .enumerate()
-        .map(|(i, v)| (v.name, i))
-        .collect::<HashMap<_, _>>();
-    let mm: usize = 1 << positive_flow.len();
-    let opt = generate_matrix(v);
+pub fn part2(v: Valves) -> u16 {
+    let mm: usize = 1 << v.positive_flow().count();
+    let opt = generate_matrix(&v);
 
     let mut best = 0;
     for x in 0..mm / 2 {
         let y = mm - 1 - x;
-        best = best.max(opt[25][lab2idx["AA"]][x] + opt[25][lab2idx["AA"]][y]);
+        best = best.max(
+            opt[25][v.idx_by_name("AA").unwrap()][x] + opt[25][v.idx_by_name("AA").unwrap()][y],
+        );
     }
     best
 }
 
-pub fn parse<'a>(data: &'a str) -> Valves {
+pub fn parse<'a>(data: &'a str) -> Valves<'a> {
     let (rest, valves) = separated_list1(newline, valve)(data).unwrap();
     assert_eq!(rest.trim(), "");
 
-    Valves(
-        valves
-            .into_iter()
-            .map(|valve: Valve| (valve.name.clone(), valve))
-            .collect(),
-    )
+    let mut vs = Valves::new();
+
+    for valve in valves {
+        vs.insert(valve);
+    }
+
+    vs
 }
 
 fn valve(s: &str) -> IResult<&str, Valve> {
@@ -142,38 +85,92 @@ fn valve(s: &str) -> IResult<&str, Valve> {
         tag("Valve "),
         alpha1,
         tag(" has flow rate="),
-        parser::from_dig,
+        map_res(digit1, |s: &str| u16::from_str_radix(s, 10)),
         alt((
             tag("; tunnels lead to valves "),
             tag("; tunnel leads to valve "),
         )),
         separated_list1(tag(", "), alpha1),
     ))(s)?;
-    Ok((
-        rest,
-        Valve {
-            name,
-            flow_rate: flow_rate as u32,
-            connections,
-            open: false,
-        },
-    ))
+    Ok((rest, Valve::new(name, flow_rate, connections)))
 }
 
 #[derive(Debug)]
-pub struct Valves<'a>(HashMap<&'a str, Valve<'a>>);
+pub struct Valves<'a> {
+    vs: Vec<Valve<'a>>,
+    by_name: HashMap<&'a str, Valve<'a>>,
+    idx_by_name: HashMap<&'a str, usize>,
+}
 
-#[derive(Debug)]
+impl<'a> Valves<'a> {
+    pub fn new() -> Self {
+        Self {
+            vs: Vec::new(),
+            by_name: HashMap::new(),
+            idx_by_name: HashMap::new(),
+        }
+    }
+
+    fn positive_flow(&self) -> impl Iterator<Item = &str> {
+        self.vs.iter().filter_map(|x| {
+            if x.flow_rate > 0 {
+                return Some(x.name);
+            }
+            None
+        })
+    }
+
+    fn insert(&mut self, v: Valve<'a>) {
+        self.vs.push(v.clone());
+        self.vs.sort_by_key(|x| -(x.flow_rate as i32));
+        self.by_name.insert(v.name, v);
+
+        self.idx_by_name = self
+            .vs
+            .iter()
+            .enumerate()
+            .map(|(i, x)| (x.name, i))
+            .collect();
+    }
+
+    fn idx_by_name(&self, name: &str) -> Option<usize> {
+        self.idx_by_name.get(name).copied()
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &Valve<'a>> {
+        self.vs.iter()
+    }
+
+    fn len(&self) -> usize {
+        self.vs.len()
+    }
+}
+
+#[derive(Clone, Debug, PartialOrd, Eq, PartialEq)]
 pub struct Valve<'a> {
     name: &'a str,
-    flow_rate: u32,
+    flow_rate: u16,
     connections: Vec<&'a str>,
-    open: bool,
+}
+
+impl<'a> Valve<'a> {
+    pub fn new(name: &'a str, flow_rate: u16, connections: Vec<&'a str>) -> Self {
+        Self {
+            name,
+            flow_rate,
+            connections,
+        }
+    }
+}
+
+impl<'a> std::cmp::Ord for Valve<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.flow_rate.cmp(&other.flow_rate)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use pathfinding::prelude::{DenseCapacity, SparseCapacity};
 
     use super::*;
 
@@ -192,5 +189,23 @@ Valve JJ has flow rate=21; tunnel leads to valve II"#;
         let parsed = parse(input);
         let res = part1(parsed);
         assert_eq!(1651, res)
+    }
+
+    #[test]
+    fn test_ord() {
+        let a = Valve::new("a", 10, vec![]);
+        let b = Valve::new("b", 11, vec![]);
+        let c = Valve::new("c", 12, vec![]);
+        let d = Valve::new("d", 12, vec![]);
+
+        assert_eq!(
+            vec![&c, &b, &a].into_iter().sorted().collect::<Vec<_>>(),
+            vec![&a, &b, &c]
+        );
+
+        assert_eq!(
+            vec![&d, &c, &a].into_iter().sorted().collect::<Vec<_>>(),
+            vec![&a, &c, &d]
+        )
     }
 }
