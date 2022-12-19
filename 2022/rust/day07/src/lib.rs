@@ -10,14 +10,14 @@ use nom::{
     IResult,
 };
 
-pub fn part1<'a>(root: Directory<'a>) -> i32 {
+pub fn part1<'a>(root: Directory) -> i32 {
     root.all_dirs()
         .map(|x| x.total_size())
         .filter(|x| x <= &100000)
         .sum()
 }
 
-pub fn part2<'a>(root: Directory<'a>) -> i32 {
+pub fn part2<'a>(root: Directory) -> i32 {
     let total = root.total_size();
     let free = 70000000 - total;
     let to_delete = 30000000 - free;
@@ -32,19 +32,19 @@ pub fn part2<'a>(root: Directory<'a>) -> i32 {
     big_enonugh.first().unwrap().total_size()
 }
 
-pub fn parse<'a>(data: &'a str) -> Directory<'a> {
+pub fn parse<'a>(data: &'a str) -> Directory {
     let (_, root) = parse_directory(data).unwrap();
 
     root
 }
 
 pub fn parse_file(s: &str) -> IResult<&str, File> {
-    let (rest, (size, _, name)) = terminated(
+    let (rest, (size, _, _name)) = terminated(
         tuple((parser::from_dig, tag(" "), not_line_ending)),
         many0(line_ending),
     )(s)?;
 
-    Ok((rest, File::new(name, size)))
+    Ok((rest, File::new(size)))
 }
 
 pub fn parse_dir(s: &str) -> IResult<&str, &str> {
@@ -69,54 +69,47 @@ pub fn parse_directory_item(s: &str) -> IResult<&str, DirectoryItem> {
     Ok((rest_c, DirectoryItem::File(file)))
 }
 
-// pub fn parse_directory(s: &str) -> IResult<&str, Directory> {
-//     let (rest, name) = preceded(tag("dir "), not_line_ending)(s)?;
-//     Ok((rest, Directory::new(name)))
-// }
 pub fn parse_directory(s: &str) -> IResult<&str, Directory> {
-    let (rest, (_, dir_name, _, directory_items, _)) = terminated(
+    let (rest, (_, _dir_name, _, directory_items, _)) = terminated(
         tuple((
             tag("$ cd "),
             terminated(not_line_ending, line_ending),
             terminated(tag("$ ls"), line_ending),
             many0(parse_directory_item),
-            // separated_list0(newline, parse_directory_item),
             alt((tag("$ cd .."), eof)),
         )),
         many0(line_ending),
     )(s)?;
 
-    Ok((rest, Directory::new(dir_name, directory_items)))
+    Ok((rest, Directory::new(directory_items)))
 }
 
 #[derive(Debug, Clone)]
-pub enum DirectoryItem<'a> {
-    File(File<'a>),
-    Directory(Directory<'a>),
+pub enum DirectoryItem {
+    File(File),
+    Directory(Directory),
     Dir,
 }
 
 #[derive(Debug, Clone)]
-pub struct File<'a> {
+pub struct File {
     size: i32,
-    name: &'a str,
 }
 
-impl<'a> File<'a> {
-    pub fn new(name: &'a str, size: i32) -> Self {
-        Self { name, size }
+impl File {
+    pub fn new(size: i32) -> Self {
+        Self { size }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Directory<'a> {
-    name: &'a str,
-    items: Vec<DirectoryItem<'a>>,
+pub struct Directory {
+    items: Vec<DirectoryItem>,
 }
 
-impl<'a> Directory<'a> {
-    pub fn new(name: &'a str, items: Vec<DirectoryItem<'a>>) -> Self {
-        Self { name, items }
+impl Directory {
+    pub fn new(items: Vec<DirectoryItem>) -> Self {
+        Self { items }
     }
 
     pub fn file_size(&self) -> i32 {
@@ -133,14 +126,14 @@ impl<'a> Directory<'a> {
         self.file_size() + self.dirs().map(|x| x.total_size()).sum::<i32>()
     }
 
-    pub fn dirs(&self) -> impl Iterator<Item = &Directory<'a>> {
+    pub fn dirs(&self) -> impl Iterator<Item = &Directory> {
         self.items.iter().filter_map(|x| match x {
             DirectoryItem::Directory(dir) => Some(dir),
             _ => None,
         })
     }
 
-    pub fn all_dirs(&'a self) -> Box<dyn Iterator<Item = &Directory<'a>> + 'a> {
+    pub fn all_dirs(&self) -> Box<dyn Iterator<Item = &Directory> + '_> {
         Box::new(iter::once(self).chain(self.dirs().map(|x| x.all_dirs()).flatten()))
     }
 }
