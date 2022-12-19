@@ -11,6 +11,8 @@ use nom::{
     IResult,
 };
 
+use rayon::prelude::*;
+
 pub fn part1(blueprints: Vec<Blueprint>) -> i32 {
     let states: Vec<State> = blueprints
         .into_iter()
@@ -18,7 +20,7 @@ pub fn part1(blueprints: Vec<Blueprint>) -> i32 {
         .collect();
 
     states
-        .into_iter()
+        .into_par_iter()
         .map(|state| {
             BestSteps::new(state)
                 .map(|s| s.quality_level())
@@ -35,7 +37,7 @@ pub fn part2(blueprints: Vec<Blueprint>) -> i32 {
         .collect();
 
     states
-        .into_iter()
+        .into_par_iter()
         .take(3)
         .map(|state| BestSteps::new(state).map(|s| s.geode).max().unwrap())
         .product()
