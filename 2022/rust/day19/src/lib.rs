@@ -17,51 +17,15 @@ pub fn part1(blueprints: Vec<Blueprint>) -> i32 {
         .map(|blueprint| State::new(blueprint, 24))
         .collect();
 
-    let mut max_quality: i32 = 0;
-
-    for state in states {
-        let mut q: VecDeque<State> = VecDeque::new();
-        q.push_front(state.clone());
-        let mut bp_max_quality = 0;
-        let mut seen = HashSet::new();
-        let mut potential_best = 0;
-
-        while let Some(state) = q.pop_front() {
-            let remaining_moves = (state.max_steps - state.steps) as i32;
-            let upper_bounds: i32 = state.geode
-                + state.geode_robots * remaining_moves
-                + (0i32..=remaining_moves).reduce(|acc, i| acc + i).unwrap();
-
-            if upper_bounds <= potential_best {
-                continue;
-            }
-
-            potential_best = potential_best.max(state.geode);
-
-            if !seen.insert((
-                state.steps,
-                state.ore,
-                state.clay,
-                state.obsidian,
-                state.geode,
-                state.ore_robots,
-                state.clay_robots,
-                state.obsidian_robots,
-                state.geode_robots,
-            )) {
-                continue;
-            }
-
-            bp_max_quality = bp_max_quality.max(state.quality_level());
-            for next_state in state.next_states() {
-                q.push_front(next_state);
-            }
-        }
-
-        max_quality += bp_max_quality;
-    }
-
-    max_quality
+    states
+        .into_iter()
+        .map(|state| {
+            BestSteps::new(state)
+                .map(|s| s.quality_level())
+                .max()
+                .unwrap()
+        })
+        .sum()
 }
 
 pub fn part2(blueprints: Vec<Blueprint>) -> i32 {
@@ -70,51 +34,11 @@ pub fn part2(blueprints: Vec<Blueprint>) -> i32 {
         .map(|blueprint| State::new(blueprint, 32))
         .collect();
 
-    let mut sum_geodes: i32 = 1;
-
-    for state in states.iter().take(3) {
-        let mut q: VecDeque<State> = VecDeque::new();
-        q.push_front(state.clone());
-        let mut bp_max_geodes = 0;
-        let mut seen = HashSet::new();
-        let mut potential_best = 0;
-
-        while let Some(state) = q.pop_front() {
-            let remaining_moves = (state.max_steps - state.steps) as i32;
-            let upper_bounds: i32 = state.geode
-                + state.geode_robots * remaining_moves
-                + (0i32..=remaining_moves).reduce(|acc, i| acc + i).unwrap();
-
-            if upper_bounds <= potential_best {
-                continue;
-            }
-
-            potential_best = potential_best.max(state.geode);
-
-            if !seen.insert((
-                state.steps,
-                state.ore,
-                state.clay,
-                state.obsidian,
-                state.geode,
-                state.ore_robots,
-                state.clay_robots,
-                state.obsidian_robots,
-                state.geode_robots,
-            )) {
-                continue;
-            }
-
-            bp_max_geodes = bp_max_geodes.max(state.geode);
-            for next_state in state.next_states() {
-                q.push_front(next_state);
-            }
-        }
-
-        sum_geodes *= bp_max_geodes;
-    }
-
-    sum_geodes
+    states
+        .into_iter()
+        .take(3)
+        .map(|state| BestSteps::new(state).map(|s| s.geode).max().unwrap())
+        .product()
 }
 
 pub fn parse<'a>(data: &'a str) -> Vec<Blueprint> {
@@ -409,6 +333,66 @@ impl State {
 impl fmt::Debug for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "BP: {}, Step: {}/{}, ore_robots: {}, clay_robots: {}, obsidian_robots: {}, geode_robots: {}, ore: {}, clay: {}, obsiaidn: {}, geodes: {}", self.blueprint.id, self.steps, self.max_steps, self.ore_robots, self.clay_robots, self.obsidian_robots, self.geode_robots, self.obsidian, self.clay, self.obsidian, self.geode)
+    }
+}
+
+struct BestSteps {
+    q: VecDeque<State>,
+    seen: HashSet<(usize, i32, i32, i32, i32, i32, i32, i32, i32)>,
+    potential_best: i32,
+}
+
+impl BestSteps {
+    pub fn new(state: State) -> Self {
+        let mut q = VecDeque::new();
+        q.push_front(state);
+
+        Self {
+            q,
+            seen: HashSet::new(),
+            potential_best: 0,
+        }
+    }
+}
+
+impl Iterator for BestSteps {
+    type Item = State;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(state) = self.q.pop_front() {
+            let remaining_moves = (state.max_steps - state.steps) as i32;
+            let upper_bounds: i32 = state.geode
+                + state.geode_robots * remaining_moves
+                + (0..=remaining_moves).reduce(|acc, i| acc + i).unwrap();
+
+            if upper_bounds <= self.potential_best {
+                continue;
+            }
+
+            self.potential_best = self.potential_best.max(state.geode);
+
+            if !self.seen.insert((
+                state.steps,
+                state.ore,
+                state.clay,
+                state.obsidian,
+                state.geode,
+                state.ore_robots,
+                state.clay_robots,
+                state.obsidian_robots,
+                state.geode_robots,
+            )) {
+                continue;
+            }
+
+            for next_state in state.next_states() {
+                self.q.push_front(next_state);
+            }
+
+            return Some(state);
+        }
+
+        return None;
     }
 }
 
