@@ -1,1 +1,1 @@
-util::generate_main!(day17);
+util::generate_main!(day18);
