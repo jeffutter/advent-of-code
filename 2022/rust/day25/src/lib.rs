@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 pub fn part1<T: Iterator<Item = i64> + Clone>(ns: T) -> String {
     encode(ns.sum())
 }
