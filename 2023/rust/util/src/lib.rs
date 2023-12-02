@@ -89,25 +89,23 @@ macro_rules! generate_main {
     };
 }
 
+pub extern crate paste;
+
 #[macro_export]
-macro_rules! generate_tests {
-    ($year:expr, $mod: ident, $day:expr, $result1:expr, $result2:expr) => {
-        use $mod::parse;
-        use $mod::part1;
-        use $mod::part2;
+macro_rules! generate_test {
+    ($year:expr, $day:expr, $part:expr, $result:expr) => {
+        // use $crate::paste;
 
-        #[test]
-        fn test_part1() {
-            let input = util::read_input($year, $day);
-            let data = $mod::parse(&input);
-            assert_eq!($mod::part1(data), $result1)
-        }
+        $crate::paste::item! {
+            use super::*;
 
-        #[test]
-        fn test_part2() {
-            let input = util::read_input($year, $day);
-            let data = $mod::parse(&input);
-            assert_eq!($mod::part2(data), $result2)
+            #[test]
+            fn [<test_ $part>]() {
+                let input = util::read_input($year, $day);
+                let data = parse(&input);
+                assert_eq!([<part $part>](data), $result)
+            }
+
         }
     };
 }
