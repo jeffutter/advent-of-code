@@ -72,14 +72,14 @@ macro_rules! generate_main {
               let day = day_s.parse::<u32>().unwrap();
 
               let (res, duration) = measure_time(|| {
-                let input = util::read_input(2022, day);
+                let input = util::read_input(2023, day);
                 let parsed = $mod_name::parse(&input);
                 $mod_name::part1(parsed)
               });
               println!("Day{:0>2}-01 {: >10}μs:\t{}", day, duration.as_micros().to_formatted_string(&Locale::en), res);
 
               let (res, duration) = measure_time(|| {
-                let input = util::read_input(2022, day);
+                let input = util::read_input(2023, day);
                 let parsed = $mod_name::parse(&input);
                 $mod_name::part2(parsed)
               });

@@ -68,6 +68,6 @@ fn match_string_num(str: &str) -> i32 {
 mod tests {
     use util::generate_test;
 
-    generate_test! { 2023, 1, 1, 56396}
+    generate_test! { 2023, 1, 1, 56397}
     generate_test! { 2023, 1, 2, 55701}
 }
