@@ -7,6 +7,7 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
+use parser::FromDig;
 
 #[derive(Debug)]
 struct Draw {
@@ -25,7 +26,7 @@ fn parse_draw(s: &str) -> IResult<&str, Draw> {
     let (rest, colors) = separated_list1(
         tag(","),
         tuple((
-            delimited(multispace0, parser::from_dig, multispace0),
+            delimited(multispace0, <i32 as FromDig>::from_dig, multispace0),
             alpha1,
         )),
     )(s)?;
@@ -46,7 +47,10 @@ fn parse_draw(s: &str) -> IResult<&str, Draw> {
 }
 
 fn parse_game(s: &str) -> IResult<&str, Game> {
-    let (rest, id) = preceded(tag("Game "), terminated(parser::from_dig, tag(":")))(s)?;
+    let (rest, id) = preceded(
+        tag("Game "),
+        terminated(<i32 as FromDig>::from_dig, tag(":")),
+    )(s)?;
     let (rest, draws) = separated_list1(tag(";"), parse_draw)(rest)?;
 
     Ok((rest, Game { id, draws }))
