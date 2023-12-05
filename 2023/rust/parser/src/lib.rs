@@ -11,6 +11,7 @@ use nom::{
 
 pub trait FromDig {
     type Num;
+
     fn from_dig(s: &str) -> IResult<&str, Self::Num>;
 }
 
@@ -25,6 +26,13 @@ impl FromDig for i32 {
     type Num = i32;
     fn from_dig(s: &str) -> IResult<&str, Self::Num> {
         map_res(digit1, |s: &str| i32::from_str_radix(s, 10))(s)
+    }
+}
+
+impl FromDig for i64 {
+    type Num = i64;
+    fn from_dig(s: &str) -> IResult<&str, Self::Num> {
+        map_res(digit1, |s: &str| i64::from_str_radix(s, 10))(s)
     }
 }
 
