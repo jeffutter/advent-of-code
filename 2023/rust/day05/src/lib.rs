@@ -217,5 +217,5 @@ humidity-to-location map:
     }
 
     generate_test! { 2023, 5, 1, 1181555926}
-    generate_test! { 2023, 5, 2, 0}
+    generate_test! { 2023, 5, 2, 37806486}
 }
