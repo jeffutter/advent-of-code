@@ -38,6 +38,29 @@ impl<'a> OffsetMap<'a> {
             })
             .unwrap_or(*seed)
     }
+
+    fn map_range(&self, range: Range<i64>) -> Vec<Range<i64>> {
+        let mut mapped = Vec::new();
+
+        let mut remaining = vec![range.clone()];
+        while let Some(r) = remaining.pop() {
+            let mut did_something = false;
+            for m in &self.ranges {
+                if let (Some(res), rem) = m.map_range(r.clone()) {
+                    mapped.push(res);
+                    remaining.extend(rem);
+                    did_something = true;
+                    break;
+                }
+            }
+
+            if !did_something {
+                mapped.push(r);
+            }
+        }
+
+        mapped
+    }
 }
 
 #[derive(Debug)]
@@ -47,11 +70,50 @@ pub struct OffsetRange {
 }
 
 impl OffsetRange {
-    fn map_seed(&self, seed: &i64) -> i64 {
-        if self.range.contains(seed) {
-            return seed + self.offset;
+    fn new(start: i64, end: i64, offset: i64) -> Self {
+        Self {
+            range: start..end,
+            offset,
         }
-        *seed
+    }
+
+    fn map_seed(&self, seed: &i64) -> i64 {
+        self.maybe_map_seed(seed).unwrap_or(*seed)
+    }
+
+    fn maybe_map_seed(&self, seed: &i64) -> Option<i64> {
+        if self.range.contains(seed) {
+            return Some(seed + self.offset);
+        }
+        None
+    }
+
+    fn len(&self) -> i64 {
+        self.range.end - self.range.start
+    }
+
+    fn map_range(&self, range: Range<i64>) -> (Option<Range<i64>>, Vec<Range<i64>>) {
+        let mapped_start = self.maybe_map_seed(&range.start);
+        let mapped_end = self.maybe_map_seed(&(range.end - 1)).map(|s| s + 1);
+
+        let mapped_range = match (mapped_start, mapped_end) {
+            (None, None) => None,
+            (Some(s), Some(e)) => Some(s..e),
+            (Some(s), None) => Some(s..(self.map_seed(&(self.range.end - 1)) + 1)),
+            (None, Some(e)) => Some(self.map_seed(&self.range.start)..e),
+        };
+
+        let mut remaining = Vec::new();
+        if mapped_range.is_some() {
+            if self.range.start > range.start {
+                remaining.push(range.start..self.range.start);
+            }
+            if self.range.start + self.len() < range.end {
+                remaining.push(self.range.start + self.len()..range.end);
+            }
+        }
+
+        (mapped_range, remaining)
     }
 }
 
@@ -64,13 +126,7 @@ fn parse_offset_range(s: &str) -> IResult<&str, OffsetRange> {
         <i64 as FromDig>::from_dig,
     ))(s)?;
 
-    Ok((
-        rest,
-        OffsetRange {
-            range: source..(source + len),
-            offset: dest - source,
-        },
-    ))
+    Ok((rest, OffsetRange::new(source, source + len, dest - source)))
 }
 
 fn parse_offset_map(s: &str) -> IResult<&str, OffsetMap> {
@@ -153,21 +209,22 @@ pub fn part2<'a>(input: SeedMap) -> i64 {
         ranges.push(*start..(*start + len));
     }
 
-    ranges
-        .into_iter()
-        .flat_map(|range| range.into_iter())
-        .unique()
-        .map(|seed| {
-            TRANSFORMS.iter().fold(seed, |acc, transform| {
-                input.maps.get(transform).unwrap().map_seed(&acc)
-            })
-        })
-        .min()
-        .unwrap()
+    let mut current = ranges.to_vec();
+    for t_name in TRANSFORMS.iter() {
+        let t = input.maps.get(t_name).unwrap();
+
+        current = current
+            .iter()
+            .flat_map(|r| t.map_range(r.clone()))
+            .collect();
+    }
+
+    current.iter().min_by_key(|r| r.start).unwrap().start
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use util::generate_test;
 
     const SAMPLE_INPUT: &str = r#"seeds: 79 14 55 13
@@ -214,6 +271,15 @@ humidity-to-location map:
     fn test_sample2() {
         let data = parse(&SAMPLE_INPUT);
         assert_eq!(part2(data), 46);
+    }
+
+    #[test]
+    fn test_offset_range_map_range() {
+        let or = OffsetRange::new(10, 20, 4);
+        assert_eq!((Some(16..19), vec![]), or.map_range(12..15));
+        assert_eq!((Some(14..16), vec![8..10]), or.map_range(8..12));
+        assert_eq!((Some(22..24), vec![20..22]), or.map_range(18..22));
+        assert_eq!((None, vec![]), or.map_range(2..4));
     }
 
     generate_test! { 2023, 5, 1, 1181555926}
