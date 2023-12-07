@@ -1,8 +1,6 @@
-use std::collections::BTreeSet;
-
 use itertools::Itertools;
 
-#[derive(Clone, Debug, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Card {
     Joker(Box<Card>),
     Two,
@@ -18,6 +16,12 @@ pub enum Card {
     Q,
     K,
     A,
+}
+
+impl PartialOrd for Card {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Ord for Card {
@@ -51,29 +55,33 @@ impl From<char> for Card {
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum HandType {
-    FiveOfKind,
-    FourOfKind,
-    FullHouse,
-    ThreeOfKind,
-    TwoPair,
-    OnePair,
     HighCard,
+    OnePair,
+    TwoPair,
+    ThreeOfKind,
+    FullHouse,
+    FourOfKind,
+    FiveOfKind,
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Hand {
     cards: [Card; 5],
     wager: i32,
 }
 
-impl std::fmt::Debug for Hand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "{:?} - {:?} = {:?}",
-            self.cards,
-            self.wager,
-            self.grade()
-        ))
+impl Ord for Hand {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.grade()
+            .cmp(&other.grade())
+            .then_with(|| self.cards.cmp(&other.cards))
+            .then_with(|| self.wager.cmp(&other.wager))
+    }
+}
+
+impl PartialOrd for Hand {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -104,11 +112,11 @@ impl Hand {
 }
 
 #[derive(Debug)]
-pub struct Hands(BTreeSet<Hand>);
+pub struct Hands(Vec<Hand>);
 
 impl Hands {
     fn new() -> Self {
-        Self(BTreeSet::new())
+        Self(Vec::new())
     }
 }
 
@@ -136,7 +144,7 @@ pub fn parse<'a>(data: &'a str) -> Hands {
         let cards = hands.next().unwrap();
         let wager = hands.next().unwrap();
         let hand: Hand = (cards, wager).into();
-        acc.0.insert(hand);
+        acc.0.push(hand);
         acc
     })
 }
@@ -145,12 +153,7 @@ pub fn part1<'a>(input: Hands) -> i32 {
     input
         .0
         .iter()
-        .sorted_by(|a, b| match Ord::cmp(&a.grade(), &b.grade()) {
-            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-            std::cmp::Ordering::Equal => Ord::cmp(&b.cards, &a.cards),
-            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
-        })
-        .rev()
+        .sorted()
         .enumerate()
         .map(|(idx, hand)| ((idx + 1) as i32) * hand.wager)
         .sum()
@@ -165,54 +168,40 @@ pub fn part2<'a>(input: Hands) -> i32 {
                 return hand;
             }
 
-            hand.cards
-                .iter()
-                .enumerate()
-                .filter(|(_i, c)| c == &&Card::J)
-                .map(|(i, _)| {
-                    vec![
-                        (i, Card::Joker(Box::new(Card::Two))),
-                        (i, Card::Joker(Box::new(Card::Three))),
-                        (i, Card::Joker(Box::new(Card::Four))),
-                        (i, Card::Joker(Box::new(Card::Five))),
-                        (i, Card::Joker(Box::new(Card::Six))),
-                        (i, Card::Joker(Box::new(Card::Seven))),
-                        (i, Card::Joker(Box::new(Card::Eight))),
-                        (i, Card::Joker(Box::new(Card::Nine))),
-                        (i, Card::Joker(Box::new(Card::T))),
-                        (i, Card::Joker(Box::new(Card::Q))),
-                        (i, Card::Joker(Box::new(Card::K))),
-                        (i, Card::Joker(Box::new(Card::A))),
-                    ]
-                })
-                .multi_cartesian_product()
-                .map(|index_cards| {
-                    let new_cards = index_cards.iter().fold(
-                        hand.cards.clone(),
-                        |mut new_cards, (idx, new_card)| {
-                            new_cards[*idx] = new_card.clone();
-                            new_cards
-                        },
-                    );
-                    let mut new_hand = hand.clone();
-                    new_hand.cards = new_cards;
-                    new_hand
-                })
-                .sorted_by(|a, b| match Ord::cmp(&a.grade(), &b.grade()) {
-                    std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-                    std::cmp::Ordering::Equal => Ord::cmp(&b.cards, &a.cards),
-                    std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
-                })
-                .next()
-                .unwrap()
-                .clone()
+            let counts = hand.cards.iter().filter(|card| card != &&Card::J).counts();
+
+            if counts.is_empty() {
+                return Hand {
+                    cards: [
+                        Card::Joker(Box::new(Card::A)),
+                        Card::Joker(Box::new(Card::A)),
+                        Card::Joker(Box::new(Card::A)),
+                        Card::Joker(Box::new(Card::A)),
+                        Card::Joker(Box::new(Card::A)),
+                    ],
+                    wager: hand.wager,
+                };
+            }
+
+            let (_, most_common) = counts
+                .into_iter()
+                .map(|(card, count)| (count, card))
+                .max()
+                .unwrap();
+
+            let mut new_cards = hand.cards.clone();
+            for card in new_cards.iter_mut() {
+                if *card == Card::J {
+                    *card = Card::Joker(Box::new(most_common.clone()));
+                }
+            }
+
+            return Hand {
+                cards: new_cards,
+                wager: hand.wager,
+            };
         })
-        .sorted_by(|a, b| match Ord::cmp(&a.grade(), &b.grade()) {
-            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-            std::cmp::Ordering::Equal => Ord::cmp(&b.cards, &a.cards),
-            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
-        })
-        .rev()
+        .sorted()
         .enumerate()
         .map(|(idx, hand)| ((idx + 1) as i32) * hand.wager)
         .sum()
@@ -306,6 +295,40 @@ JJJJ2 41"#,
         };
 
         assert_eq!(a.cmp(&b), std::cmp::Ordering::Less);
+    }
+
+    #[test]
+    fn test_part2_joker_cmp_sort() {
+        let a = Hand {
+            cards: [
+                Card::Joker(Box::new(Card::A)),
+                Card::Joker(Box::new(Card::A)),
+                Card::Joker(Box::new(Card::A)),
+                Card::Joker(Box::new(Card::A)),
+                Card::Joker(Box::new(Card::A)),
+            ],
+            wager: 37,
+        };
+
+        let b = Hand {
+            cards: [
+                Card::Joker(Box::new(Card::Two)),
+                Card::Joker(Box::new(Card::Two)),
+                Card::Joker(Box::new(Card::Two)),
+                Card::Joker(Box::new(Card::Two)),
+                Card::Two,
+            ],
+            wager: 41,
+        };
+
+        assert_eq!(
+            vec![a.clone(), b.clone()].iter().sorted().next(),
+            Some(a.clone()).as_ref()
+        );
+        assert_eq!(
+            vec![b.clone(), a.clone()].iter().sorted().next(),
+            Some(a).as_ref()
+        );
     }
 
     generate_test! { 2023, 7, 1, 255048101}
