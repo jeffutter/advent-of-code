@@ -314,6 +314,7 @@ dependencies = [
  "itertools",
  "nom",
  "parser",
+ "rayon",
  "util",
 ]
 
@@ -1053,6 +1054,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "num-format",
+ "num-traits",
  "paste",
  "ureq",
 ]

@@ -1,10 +1,67 @@
 use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::US::Eastern;
+use std::fmt::{Debug, Display};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use ureq::AgentBuilder;
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Pos<T>
+where
+    T: Display,
+{
+    pub x: T,
+    pub y: T,
+}
+
+impl<T> Pos<T>
+where
+    T: Copy
+        + Display
+        + num_traits::NumCast
+        + num_traits::Signed
+        + std::ops::Sub<T, Output = T>
+        + std::ops::Add<T, Output = T>,
+{
+    pub fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+
+    pub fn manhattan_distance(&self, other: &Pos<T>) -> T {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
+    }
+
+    pub fn distance(&self, other: &Pos<T>) -> f64 {
+        let self_x: f64 = num_traits::cast(self.x).unwrap();
+        let self_y: f64 = num_traits::cast(self.y).unwrap();
+        let other_x: f64 = num_traits::cast(other.y).unwrap();
+        let other_y: f64 = num_traits::cast(other.y).unwrap();
+
+        ((other_x - self_x).abs().powi(2) + (other_y - self_y).abs().powi(2)).sqrt()
+    }
+
+    pub fn successors_4(&self) -> Vec<Pos<T>> {
+        let &Pos { x, y } = self;
+        let one: T = num_traits::cast(1).unwrap();
+        vec![
+            Pos::new(x - one, y),
+            Pos::new(x + one, y),
+            Pos::new(x, y - one),
+            Pos::new(x, y + one),
+        ]
+    }
+}
+
+impl<T> Debug for Pos<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("({},{})", self.x, self.y))
+    }
+}
 
 pub fn read_input(year: i32, day: u32) -> String {
     let utc_now: DateTime<Utc> = chrono::Utc::now();
