@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use itertools::Itertools;
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Spring {
@@ -160,7 +159,7 @@ pub struct Rows {
 
 impl Rows {
     fn count_ways(&self) -> usize {
-        self.rows.iter().map(|row| row.count_ways().0).sum()
+        self.rows.par_iter().map(|row| row.count_ways().0).sum()
     }
 
     fn unfold(&self) -> Self {
