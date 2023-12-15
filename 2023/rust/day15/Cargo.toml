@@ -11,3 +11,4 @@ parser = { path = "../parser" }
 itertools = "0.12"
 nom = { version = "7.1", features = ["alloc"] }
 rayon = "1.6"
+indexmap = "2.1.0"
