@@ -21,6 +21,19 @@ where
     T: Copy
         + Display
         + num_traits::NumCast
+        + std::ops::Sub<T, Output = T>
+        + std::ops::Add<T, Output = T>,
+{
+    pub fn new_unsigned(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+impl<T> Pos<T>
+where
+    T: Copy
+        + Display
+        + num_traits::NumCast
         + num_traits::Signed
         + std::ops::Sub<T, Output = T>
         + std::ops::Add<T, Output = T>,
