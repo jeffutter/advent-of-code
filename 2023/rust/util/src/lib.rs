@@ -7,6 +7,14 @@ use std::io::Write;
 use std::path::Path;
 use ureq::AgentBuilder;
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Direction {
+    N,
+    E,
+    S,
+    W,
+}
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pos<T>
 where
@@ -22,10 +30,35 @@ where
         + Display
         + num_traits::NumCast
         + std::ops::Sub<T, Output = T>
-        + std::ops::Add<T, Output = T>,
+        + num_traits::ops::checked::CheckedSub
+        + std::ops::Add<T, Output = T>
+        + num_traits::ops::checked::CheckedAdd,
 {
     pub fn new_unsigned(x: T, y: T) -> Self {
         Self { x, y }
+    }
+
+    pub fn translate(&self, direction: &Direction) -> Option<Self> {
+        let (x, y) = match direction {
+            Direction::N => (
+                self.x,
+                self.y.checked_sub(&num_traits::cast::<usize, T>(1)?)?,
+            ),
+            Direction::E => (
+                self.x.checked_add(&num_traits::cast::<usize, T>(1)?)?,
+                self.y,
+            ),
+            Direction::S => (
+                self.x,
+                self.y.checked_add(&num_traits::cast::<usize, T>(1)?)?,
+            ),
+            Direction::W => (
+                self.x.checked_sub(&num_traits::cast::<usize, T>(1)?)?,
+                self.y,
+            ),
+        };
+
+        Some(Self { x, y })
     }
 }
 
