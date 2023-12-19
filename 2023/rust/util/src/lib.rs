@@ -39,21 +39,25 @@ where
     }
 
     pub fn translate(&self, direction: &Direction) -> Option<Self> {
+        self.translate_n(direction, 1)
+    }
+
+    pub fn translate_n(&self, direction: &Direction, n: usize) -> Option<Self> {
         let (x, y) = match direction {
             Direction::N => (
                 self.x,
-                self.y.checked_sub(&num_traits::cast::<usize, T>(1)?)?,
+                self.y.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
             ),
             Direction::E => (
-                self.x.checked_add(&num_traits::cast::<usize, T>(1)?)?,
+                self.x.checked_add(&num_traits::cast::<usize, T>(n)?)?,
                 self.y,
             ),
             Direction::S => (
                 self.x,
-                self.y.checked_add(&num_traits::cast::<usize, T>(1)?)?,
+                self.y.checked_add(&num_traits::cast::<usize, T>(n)?)?,
             ),
             Direction::W => (
-                self.x.checked_sub(&num_traits::cast::<usize, T>(1)?)?,
+                self.x.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
                 self.y,
             ),
         };
@@ -69,7 +73,8 @@ where
         + num_traits::NumCast
         + num_traits::Signed
         + std::ops::Sub<T, Output = T>
-        + std::ops::Add<T, Output = T>,
+        + std::ops::Add<T, Output = T>
+        + std::cmp::PartialOrd,
 {
     pub fn new(x: T, y: T) -> Self {
         Self { x, y }
@@ -97,6 +102,10 @@ where
             Pos::new(x, y - one),
             Pos::new(x, y + one),
         ]
+    }
+
+    pub fn contained_by(&self, min: &Self, max: &Self) -> bool {
+        self.x >= min.x && self.x <= max.x && self.y >= min.y && self.y <= max.y
     }
 }
 
