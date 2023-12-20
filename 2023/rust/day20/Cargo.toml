@@ -11,3 +11,5 @@ parser = { path = "../parser" }
 itertools = "0.12"
 nom = { version = "7.1", features = ["alloc"] }
 rayon = "1.6"
+enum_dispatch = "0.3.12"
+pathfinding = "4.6.0"
