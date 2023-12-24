@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use itertools::Itertools;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use util::{Cube, Direction3, Point3};
 
 #[derive(Clone, PartialEq, Eq)]
@@ -49,7 +50,7 @@ pub struct Stack {
 
 impl Stack {
     pub fn drop(&mut self) -> usize {
-        let mut changed_map = HashMap::new();
+        let mut changed_set = HashSet::new();
 
         loop {
             let mut changed = false;
@@ -57,23 +58,17 @@ impl Stack {
                 let brick = &self.bricks[i];
                 let brick_id = brick.id;
 
+                if brick.min_z() <= 1 {
+                    continue;
+                }
                 if let Some(new_brick) = brick.translate(&Direction3::O) {
-                    if new_brick.min_z() < 1 {
-                        continue;
-                    }
-
                     let mut new_stack = self.clone();
                     new_stack.bricks.remove(i);
 
-                    let collision_count = new_stack.collision_count(&new_brick);
-
-                    if collision_count == 0 {
+                    if !new_stack.any_collision(&new_brick) {
                         self.bricks[i] = new_brick;
                         changed = true;
-                        changed_map
-                            .entry(brick_id)
-                            .and_modify(|n| *n += 1)
-                            .or_insert(1);
+                        changed_set.insert(brick_id);
                     }
                 }
             }
@@ -82,34 +77,29 @@ impl Stack {
             }
         }
 
-        // changed_map.values().sum()
-        changed_map.len()
+        changed_set.len()
     }
 
-    pub fn collision_count(&self, brick: &Brick) -> usize {
+    pub fn any_collision(&self, brick: &Brick) -> bool {
         self.bricks
             .iter()
-            .filter(|bbrick| bbrick.cube.collision(&brick.cube))
-            .count()
+            .any(|bbrick| bbrick.cube.collision(&brick.cube))
     }
 
     pub fn could_disintegrate(&self) -> (usize, usize) {
-        let mut count = 0;
-        let mut dropped = 0;
-
-        for i in 0..self.bricks.len() {
-            let mut stack = self.clone();
-            stack.bricks.remove(i);
-            let before = stack.clone();
-            let dropped_count = stack.drop();
-            if stack == before {
-                count += 1;
-            } else {
-                dropped += dropped_count;
-            }
-        }
-
-        (count, dropped)
+        (0..self.bricks.len())
+            .into_par_iter()
+            .map(|i| {
+                let mut stack = self.clone();
+                stack.bricks.remove(i);
+                let before = stack.clone();
+                let dropped_count = stack.drop();
+                if stack == before {
+                    return (1, 0);
+                }
+                (0, dropped_count)
+            })
+            .reduce(|| (0, 0), |a, b| (a.0 + b.0, a.1 + b.1))
     }
 
     fn min_x(&self) -> i32 {

@@ -4,6 +4,7 @@ use std::fmt::{Debug, Display};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::ops::RangeBounds;
 use std::path::Path;
 use ureq::AgentBuilder;
 
@@ -230,6 +231,37 @@ where
             && self.min_y() <= other.max_y()
             && self.max_z() >= other.min_z()
             && self.min_z() <= other.max_z()
+    }
+
+    pub fn z_range(&self) -> impl RangeBounds<T> {
+        self.min_z()..=self.max_z()
+    }
+
+    pub fn y_range(&self) -> impl RangeBounds<T> {
+        self.min_y()..=self.max_y()
+    }
+
+    pub fn x_range(&self) -> impl RangeBounds<T> {
+        self.min_x()..=self.max_x()
+    }
+
+    pub fn collision(&self, other: &Self) -> bool {
+        let overlap_z = other.z_range().contains(&self.min_z())
+            || other.z_range().contains(&self.max_z())
+            || self.z_range().contains(&other.min_z())
+            || self.z_range().contains(&other.max_z());
+
+        let overlap_x = other.x_range().contains(&self.min_x())
+            || other.x_range().contains(&self.max_x())
+            || self.x_range().contains(&other.min_x())
+            || self.x_range().contains(&other.max_x());
+
+        let overlap_y = other.y_range().contains(&self.min_y())
+            || other.y_range().contains(&self.max_y())
+            || self.y_range().contains(&other.min_y())
+            || self.y_range().contains(&other.max_y());
+
+        overlap_z && overlap_x && overlap_y
     }
 
     pub fn max_x(&self) -> T {
