@@ -15,6 +15,16 @@ pub enum Direction {
     W,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Direction3 {
+    N,
+    E,
+    S,
+    W,
+    I,
+    O,
+}
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Pos<T>
 where
@@ -115,6 +125,154 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("({},{})", self.x, self.y))
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Point3<T>
+where
+    T: Display,
+{
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+impl<T> Point3<T>
+where
+    T: Display
+        + Copy
+        + num_traits::NumCast
+        + num_traits::ops::checked::CheckedSub
+        + num_traits::ops::checked::CheckedAdd,
+{
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { x, y, z }
+    }
+
+    pub fn translate(&self, direction: &Direction3) -> Option<Self> {
+        self.translate_n(direction, 1)
+    }
+
+    pub fn translate_n(&self, direction: &Direction3, n: usize) -> Option<Self> {
+        let (x, y, z) = match direction {
+            Direction3::N => (
+                self.x,
+                self.y.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
+                self.z,
+            ),
+            Direction3::S => (
+                self.x,
+                self.y.checked_add(&num_traits::cast::<usize, T>(n)?)?,
+                self.z,
+            ),
+            Direction3::W => (
+                self.x.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
+                self.y,
+                self.z,
+            ),
+            Direction3::E => (
+                self.x.checked_add(&num_traits::cast::<usize, T>(n)?)?,
+                self.y,
+                self.z,
+            ),
+            Direction3::I => (
+                self.x,
+                self.y,
+                self.z.checked_add(&num_traits::cast::<usize, T>(n)?)?,
+            ),
+            Direction3::O => (
+                self.x,
+                self.y,
+                self.z.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
+            ),
+        };
+
+        Some(Self::new(x, y, z))
+    }
+}
+
+impl<T> Debug for Point3<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("({},{},{})", self.x, self.y, self.z))
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Cube<T>
+where
+    T: Copy + Display,
+{
+    pub min: Point3<T>,
+    pub max: Point3<T>,
+}
+
+impl<T> Cube<T>
+where
+    T: Copy
+        + Display
+        + Ord
+        + num_traits::NumCast
+        + num_traits::ops::checked::CheckedSub
+        + num_traits::ops::checked::CheckedAdd,
+{
+    pub fn new(min: Point3<T>, max: Point3<T>) -> Self {
+        Self { min, max }
+    }
+
+    pub fn intersect(&self, other: &Self) -> bool {
+        self.max_x() >= other.min_x()
+            && self.min_x() <= other.max_x()
+            && self.max_y() >= other.min_y()
+            && self.min_y() <= other.max_y()
+            && self.max_z() >= other.min_z()
+            && self.min_z() <= other.max_z()
+    }
+
+    pub fn max_x(&self) -> T {
+        self.min.x.max(self.max.x)
+    }
+
+    pub fn min_x(&self) -> T {
+        self.min.x.min(self.max.x)
+    }
+
+    pub fn max_y(&self) -> T {
+        self.min.y.max(self.max.y)
+    }
+
+    pub fn min_y(&self) -> T {
+        self.min.y.min(self.max.y)
+    }
+
+    pub fn max_z(&self) -> T {
+        self.min.z.max(self.max.z)
+    }
+
+    pub fn min_z(&self) -> T {
+        self.min.z.min(self.max.z)
+    }
+
+    pub fn translate(&self, direction: &Direction3) -> Option<Self> {
+        self.translate_n(direction, 1)
+    }
+
+    pub fn translate_n(&self, direction: &Direction3, n: usize) -> Option<Self> {
+        let min = self.min.translate_n(direction, n)?;
+        let max = self.max.translate_n(direction, n)?;
+        Some(Self::new(min, max))
+    }
+}
+
+impl<T> Debug for Cube<T>
+where
+    T: Display + Copy,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("[{:?}, {:?}]", self.min, self.max))
     }
 }
 
