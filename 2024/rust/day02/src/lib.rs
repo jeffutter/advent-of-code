@@ -11,10 +11,24 @@ pub fn parse(data: &str) -> impl Iterator<Item = Vec<i32>> + '_ {
 pub fn part1(input: impl Iterator<Item = Vec<i32>>) -> usize {
     input
         .filter(|row| {
-            let diffs = row.iter().tuple_windows().map(|(a, b)| a - b).collect_vec();
+            row.iter()
+                .tuple_windows()
+                .map(|(a, b)| a - b)
+                .try_fold(0i8, |direction, diff| {
+                    if !good_diff(&diff) {
+                        return Err(false);
+                    }
 
-            (diffs.iter().all(|d| d.is_positive()) || diffs.iter().all(|d| d.is_negative()))
-                && diffs.iter().all(good_diff)
+                    match (direction, diff) {
+                        (0, 0) => Ok(0),
+                        (0, x) if x.is_positive() => Ok(1),
+                        (0, x) if x.is_negative() => Ok(-1),
+                        (1, x) if x.is_positive() => Ok(1),
+                        (-1, x) if x.is_negative() => Ok(-1),
+                        _ => Err(false),
+                    }
+                })
+                .is_ok()
         })
         .count()
 }
@@ -29,10 +43,25 @@ pub fn part2(input: impl Iterator<Item = Vec<i32>>) -> usize {
             (0..row.len()).any(|i| {
                 let mut row = row.clone();
                 row.remove(i);
-                let diffs = row.iter().tuple_windows().map(|(a, b)| a - b).collect_vec();
 
-                (diffs.iter().all(|d| d.is_positive()) || diffs.iter().all(|d| d.is_negative()))
-                    && diffs.iter().all(good_diff)
+                row.iter()
+                    .tuple_windows()
+                    .map(|(a, b)| a - b)
+                    .try_fold(0i8, |direction, diff| {
+                        if !good_diff(&diff) {
+                            return Err(false);
+                        }
+
+                        match (direction, diff) {
+                            (0, 0) => Ok(0),
+                            (0, x) if x.is_positive() => Ok(1),
+                            (0, x) if x.is_negative() => Ok(-1),
+                            (1, x) if x.is_positive() => Ok(1),
+                            (-1, x) if x.is_negative() => Ok(-1),
+                            _ => Err(false),
+                        }
+                    })
+                    .is_ok()
             })
         })
         .count()
