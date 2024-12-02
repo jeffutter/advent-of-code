@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 util = { path = "../util" }
-itertools = "0.12"
-regex = "1.10.2"
+itertools = "0.13"
