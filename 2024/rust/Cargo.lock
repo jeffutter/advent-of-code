@@ -37,6 +37,7 @@ name = "aoc"
 version = "0.1.0"
 dependencies = [
  "day01",
+ "day02",
  "util",
 ]
 
@@ -160,6 +161,14 @@ dependencies = [
 
 [[package]]
 name = "day01"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "util",
+]
+
+[[package]]
+name = "day02"
 version = "0.1.0"
 dependencies = [
  "itertools",
