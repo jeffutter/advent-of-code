@@ -1,4 +1,13 @@
-use regex::Regex;
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::anychar,
+    combinator::map,
+    multi::{many0, many_till},
+    sequence::tuple,
+    IResult,
+};
+use parser::FromDig;
 
 type RowType = Op;
 type OutType = i32;
@@ -10,26 +19,37 @@ pub enum Op {
     Mul(i32, i32),
 }
 
-pub fn parse(data: &str) -> impl Iterator<Item = RowType> + '_ {
-    let re = Regex::new(
-        r"(?:(?<do>do\(\)?)|(?<dont>don't\(\))|(?<mul>mul\((?<n1>\d{1,3}),(?<n2>\d{1,3})\)))",
-    )
-    .unwrap();
-    re.captures_iter(data)
-        .map(|c| {
-            if c.name("do").is_some() {
-                return Op::Do;
-            }
-            if c.name("dont").is_some() {
-                return Op::Dont;
-            }
+fn parse_do(s: &str) -> IResult<&str, Op> {
+    map(tag("do()"), |_| Op::Do)(s)
+}
 
-            let n1 = c.name("n1").unwrap().as_str().parse().unwrap();
-            let n2 = c.name("n2").unwrap().as_str().parse().unwrap();
-            Op::Mul(n1, n2)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+fn parse_dont(s: &str) -> IResult<&str, Op> {
+    map(tag("don't()"), |_| Op::Dont)(s)
+}
+
+fn parse_mul(s: &str) -> IResult<&str, Op> {
+    map(
+        tuple((
+            tag("mul("),
+            <i32 as FromDig>::from_dig,
+            tag(","),
+            <i32 as FromDig>::from_dig,
+            tag(")"),
+        )),
+        |(_, n1, _, n2, _)| Op::Mul(n1, n2),
+    )(s)
+}
+
+fn parse_op(s: &str) -> IResult<&str, Op> {
+    alt((parse_do, parse_dont, parse_mul))(s)
+}
+
+fn next_parse_op(s: &str) -> IResult<&str, Op> {
+    map(many_till(anychar, parse_op), |(_, op)| op)(s)
+}
+
+pub fn parse(data: &str) -> impl Iterator<Item = RowType> + '_ {
+    many0(next_parse_op)(data).unwrap().1.into_iter()
 }
 
 pub fn part1(input: impl Iterator<Item = RowType>) -> OutType {
