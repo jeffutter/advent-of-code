@@ -395,9 +395,20 @@ pub extern crate paste;
 
 #[macro_export]
 macro_rules! generate_test {
-    ($year:expr, $day:expr, $part:expr, $result:expr) => {
-        // use $crate::paste;
+    ($input:expr, $part:expr, $result:expr) => {
+        $crate::paste::item! {
+            use super::*;
 
+            #[test]
+            fn [<example_ $part>]() {
+                let data = parse($input);
+                assert_eq!([<part $part>](data), $result)
+            }
+
+        }
+    };
+
+    ($year:expr, $day:expr, $part:expr, $result:expr) => {
         $crate::paste::item! {
             use super::*;
 

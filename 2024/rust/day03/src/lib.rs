@@ -57,19 +57,17 @@ pub fn part2(input: impl Iterator<Item = RowType>) -> OutType {
 mod tests {
     use util::generate_test;
 
-    #[test]
-    fn sample1() {
-        let input = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
-        let data = parse(input);
-        assert_eq!(part1(data), 161);
-    }
+    generate_test!(
+        "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))",
+        1,
+        161
+    );
 
-    #[test]
-    fn sample2() {
-        let input = "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
-        let data = parse(input);
-        assert_eq!(part2(data), 48);
-    }
+    generate_test!(
+        "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))",
+        2,
+        48
+    );
 
     generate_test! { 2024, 3, 1, 161289189}
     generate_test! { 2024, 3, 2, 83595109}
