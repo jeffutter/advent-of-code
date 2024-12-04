@@ -17,6 +17,34 @@ pub enum Direction {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Direction8 {
+    NW,
+    N,
+    NE,
+    E,
+    W,
+    SW,
+    S,
+    SE,
+}
+
+impl Direction8 {
+    pub fn all() -> impl Iterator<Item = &'static Direction8> {
+        [
+            Direction8::NW,
+            Direction8::N,
+            Direction8::NE,
+            Direction8::E,
+            Direction8::W,
+            Direction8::SW,
+            Direction8::S,
+            Direction8::SE,
+        ]
+        .iter()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Direction3 {
     N,
     E,
@@ -51,6 +79,27 @@ where
 
     pub fn translate(&self, direction: &Direction) -> Option<Self> {
         self.translate_n(direction, 1)
+    }
+
+    pub fn translate8(&self, direction: &Direction8) -> Option<Self> {
+        match direction {
+            Direction8::NW => self
+                .translate(&Direction::N)
+                .and_then(|p| p.translate(&Direction::W)),
+            Direction8::N => self.translate(&Direction::N),
+            Direction8::NE => self
+                .translate(&Direction::N)
+                .and_then(|p| p.translate(&Direction::E)),
+            Direction8::E => self.translate(&Direction::E),
+            Direction8::W => self.translate(&Direction::W),
+            Direction8::SW => self
+                .translate(&Direction::S)
+                .and_then(|p| p.translate(&Direction::W)),
+            Direction8::S => self.translate(&Direction::S),
+            Direction8::SE => self
+                .translate(&Direction::S)
+                .and_then(|p| p.translate(&Direction::E)),
+        }
     }
 
     pub fn translate_n(&self, direction: &Direction, n: usize) -> Option<Self> {
@@ -112,6 +161,21 @@ where
             Pos::new(x + one, y),
             Pos::new(x, y - one),
             Pos::new(x, y + one),
+        ]
+    }
+
+    pub fn successors_8(&self) -> Vec<Pos<T>> {
+        let &Pos { x, y } = self;
+        let one: T = num_traits::cast(1).unwrap();
+        vec![
+            Pos::new(x - one, y - one),
+            Pos::new(x, y - one),
+            Pos::new(x + one, y - one),
+            Pos::new(x - one, y),
+            Pos::new(x + one, y),
+            Pos::new(x - one, y + one),
+            Pos::new(x, y + one),
+            Pos::new(x + one, y + one),
         ]
     }
 
