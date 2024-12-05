@@ -1,0 +1,7 @@
+[placeholders]
+
+[template]
+include = ["Cargo.toml", "**/*.rs"]
+
+[hooks]
+pre = ["pre-script.rhai"]
