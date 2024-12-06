@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use util::{Direction, Pos};
 
 type InputType = Map;
@@ -20,7 +21,7 @@ impl Map {
         self.cur_direction = turn(&self.cur_direction);
     }
 
-    fn next(&self) -> Next {
+    fn next(&mut self) -> Next {
         let next = self.cur.translate(&self.cur_direction).unwrap();
 
         if out_of_bounds(&self.bottom_left, &self.top_right, &next) {
@@ -28,7 +29,8 @@ impl Map {
         }
 
         if self.obstructions.contains(&next) {
-            return Next::Blocked;
+            self.turn();
+            return self.next();
         }
 
         Next::Ok(next)
@@ -37,7 +39,6 @@ impl Map {
 
 enum Next {
     Ok(P),
-    Blocked,
     OutOfBounds,
 }
 
@@ -98,10 +99,6 @@ pub fn patrol(mut map: Map) -> HashSet<P> {
         visited.insert(map.cur.clone());
         match map.next() {
             Next::Ok(pos) => map.cur = pos,
-            Next::Blocked => {
-                map.turn();
-                continue;
-            }
             Next::OutOfBounds => break,
         }
     }
@@ -119,36 +116,30 @@ pub fn part2(map: InputType) -> OutType {
     let mut possible_new_obstructions = patrol(map.clone());
     possible_new_obstructions.remove(&map.cur);
 
-    let mut cycles_found = 0;
+    possible_new_obstructions
+        .into_par_iter()
+        .filter(|new_obstruction| {
+            let mut map = map.clone();
+            map.obstructions.insert(new_obstruction.clone());
 
-    for new_obstruction in possible_new_obstructions {
-        let mut map = map.clone();
-        map.obstructions.insert(new_obstruction.clone());
+            let mut visited: HashSet<(P, Direction)> = HashSet::new();
 
-        let mut visited: HashSet<(P, Direction)> = HashSet::new();
+            loop {
+                let cur_pd = (map.cur.clone(), map.cur_direction.clone());
 
-        loop {
-            let cur_pd = (map.cur.clone(), map.cur_direction.clone());
+                if !visited.insert(cur_pd.clone()) {
+                    return true;
+                };
 
-            if !visited.insert(cur_pd.clone()) {
-                cycles_found += 1;
-                break;
-            };
-
-            match map.next() {
-                Next::Ok(pos) => map.cur = pos,
-                Next::Blocked => {
-                    map.turn();
-                    continue;
-                }
-                Next::OutOfBounds => {
-                    break;
+                match map.next() {
+                    Next::Ok(pos) => map.cur = pos,
+                    Next::OutOfBounds => {
+                        return false;
+                    }
                 }
             }
-        }
-    }
-
-    cycles_found
+        })
+        .count()
 }
 
 #[cfg(test)]
