@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 type InputType = Vec<(i64, Vec<i64>)>;
 type OutType = i64;
 
@@ -28,49 +26,55 @@ enum Op {
     Concat,
 }
 
-fn possibly_true(result: i64, values: Vec<i64>, ops: &[Op]) -> bool {
-    values
-        .windows(2)
-        .map(|_| ops)
-        .multi_cartesian_product()
-        .any(|ops| {
-            let mut ops = ops.iter();
-            let mut values = values.iter();
-            let mut acc = *values.next().unwrap();
+impl Op {
+    fn process(&self, acc: i64, v: i64) -> i64 {
+        match self {
+            Op::Add => acc + v,
+            Op::Mul => acc * v,
+            Op::Concat => acc * 10i64.pow(v.ilog10() + 1) + v,
+        }
+    }
+}
 
-            for v in values {
-                match ops.next().unwrap() {
-                    Op::Add => acc += v,
-                    Op::Mul => acc *= v,
-                    Op::Concat => {
-                        acc = [acc.to_string(), v.to_string()]
-                            .join("")
-                            .parse::<i64>()
-                            .unwrap()
-                    }
-                }
-            }
+fn possibly_true(result: &i64, total: i64, remaining: &[i64], ops: &[Op]) -> bool {
+    if remaining.is_empty() {
+        return *result == total;
+    }
 
-            acc == result
-        })
+    if total > *result {
+        return false;
+    }
+
+    for op in ops {
+        if possibly_true(
+            result,
+            op.process(total, remaining[0]),
+            &remaining[1..],
+            ops,
+        ) {
+            return true;
+        }
+    }
+
+    false
 }
 
 #[allow(unused_variables)]
 pub fn part1(input: InputType) -> OutType {
+    const OPS: [Op; 2] = [Op::Add, Op::Mul];
     input
         .iter()
-        .filter(|(result, values)| possibly_true(*result, values.to_vec(), &[Op::Add, Op::Mul]))
+        .filter(|(result, values)| possibly_true(result, values[0], &values[1..], &OPS))
         .map(|(result, values)| result)
         .sum()
 }
 
 #[allow(unused_variables)]
 pub fn part2(input: InputType) -> OutType {
+    const OPS: [Op; 3] = [Op::Add, Op::Mul, Op::Concat];
     input
         .iter()
-        .filter(|(result, values)| {
-            possibly_true(*result, values.to_vec(), &[Op::Add, Op::Mul, Op::Concat])
-        })
+        .filter(|(result, values)| possibly_true(result, values[0], &values[1..], &OPS))
         .map(|(result, values)| result)
         .sum()
 }
