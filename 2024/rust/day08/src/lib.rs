@@ -1,29 +1,149 @@
-type InputType = usize;
+use std::collections::{HashMap, HashSet};
+
+use itertools::Itertools;
+use util::Pos;
+
 type OutType = usize;
 
-#[allow(unused_variables)]
-pub fn parse(data: &str) -> InputType {
-    1
+#[derive(Debug)]
+pub struct Map {
+    antennae: HashMap<char, HashSet<Pos<i32>>>,
+    max_x: i32,
+    max_y: i32,
 }
 
 #[allow(unused_variables)]
-pub fn part1(input: InputType) -> OutType {
-    input
+pub fn parse(data: &str) -> Map {
+    let mut antennae: HashMap<char, HashSet<Pos<i32>>> = HashMap::new();
+    let mut max_x = 0;
+    let mut max_y = 0;
+
+    for (y, line) in data.lines().enumerate() {
+        for (x, c) in line.chars().enumerate() {
+            if x > max_x {
+                max_x = x;
+            }
+            if c == '.' {
+                continue;
+            }
+
+            let point = Pos::new(x as i32, y as i32);
+
+            antennae
+                .entry(c)
+                .and_modify(|antennae| {
+                    antennae.insert(point.clone());
+                })
+                .or_insert([point].into());
+        }
+        if y > max_y {
+            max_y = y;
+        }
+    }
+
+    Map {
+        antennae,
+        max_x: max_x as i32,
+        max_y: max_y as i32,
+    }
+}
+
+fn in_bounds(p: &Pos<i32>, max_x: i32, max_y: i32) -> bool {
+    p.x >= 0 && p.x <= max_x && p.y >= 0 && p.y <= max_y
+}
+
+fn translate(p: &Pos<i32>, x: i32, y: i32, max_x: i32, max_y: i32) -> Option<Pos<i32>> {
+    let new = Pos::new(p.x + x, p.y + y);
+    if in_bounds(&new, max_x, max_y) {
+        return Some(new);
+    }
+    None
 }
 
 #[allow(unused_variables)]
-pub fn part2(input: InputType) -> OutType {
-    input
+pub fn part1(map: Map) -> OutType {
+    map.antennae
+        .iter()
+        .flat_map(|(c, locations)| locations.iter().combinations(2))
+        .fold(HashSet::new(), |mut antinodes, points| {
+            let diff_x = points[0].x - points[1].x;
+            let diff_y = points[0].y - points[1].y;
+
+            if let Some(new) = translate(points[0], diff_x, diff_y, map.max_x, map.max_y) {
+                antinodes.insert(new);
+            }
+            if let Some(new) = translate(points[1], -diff_x, -diff_y, map.max_x, map.max_y) {
+                antinodes.insert(new);
+            }
+            antinodes
+        })
+        .len()
+}
+
+#[allow(unused_variables)]
+pub fn part2(map: Map) -> OutType {
+    map.antennae
+        .iter()
+        .flat_map(|(c, locations)| locations.iter().combinations(2))
+        .fold(HashSet::new(), |mut antinodes, points| {
+            let diff_x = points[0].x - points[1].x;
+            let diff_y = points[0].y - points[1].y;
+
+            let mut a_point = Some(points[0].clone());
+            while let Some(pos) = a_point {
+                antinodes.insert(pos.clone());
+                a_point = translate(&pos, diff_x, diff_y, map.max_x, map.max_y)
+            }
+
+            let mut b_point = Some(points[1].clone());
+            while let Some(pos) = b_point {
+                antinodes.insert(pos.clone());
+                b_point = translate(&pos, -diff_x, -diff_y, map.max_x, map.max_y)
+            }
+
+            antinodes
+        })
+        .len()
 }
 
 #[cfg(test)]
 mod tests {
     use util::generate_test;
 
-    generate_test!(r#""#, 1, 0);
+    generate_test!(
+        r#"............
+........0...
+.....0......
+.......0....
+....0.......
+......A.....
+............
+............
+........A...
+.........A..
+............
+............"#,
+        1,
+        14
+    );
 
-    generate_test!(r#""#, 2, 0);
+    generate_test!(
+        r#"............
+........0...
+.....0......
+.......0....
+....0.......
+......A.....
+............
+............
+........A...
+.........A..
+............
+............"#,
+        2,
+        34
+    );
 
-    generate_test! { 2024, 8, 1, 0}
-    generate_test! { 2024, 8, 2, 0}
+    generate_test! { 2024, 8, 1, 252}
+    generate_test! { 2024, 8, 2, 839}
 }
