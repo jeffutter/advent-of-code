@@ -10,7 +10,7 @@ util::generate_main!(
     day07
     day08
     day09
-    // day10
+    day10
     // day11
     // day12
     // day13
