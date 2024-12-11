@@ -1,9 +1,11 @@
 use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::US::Eastern;
+use num_traits::AsPrimitive;
 use std::fmt::{Debug, Display};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::marker::PhantomData;
 use std::ops::RangeBounds;
 use std::path::Path;
 use ureq::AgentBuilder;
@@ -438,6 +440,100 @@ where
     }
 }
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct BitMap<T> {
+    cols: Vec<u128>,
+    rows: Vec<u128>,
+    phantom: PhantomData<T>,
+}
+
+impl<T> BitMap<T>
+where
+    T: Display + AsPrimitive<usize>,
+{
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            cols: vec![0; width],
+            rows: vec![0; height],
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn present(&self, &Pos { x, y }: &Pos<T>) -> bool {
+        let y = y.as_();
+        let x = x.as_();
+        let col = self.cols.get(x).unwrap();
+
+        col & (1 << y) > 0
+    }
+
+    pub fn set(&mut self, &Pos { x, y }: &Pos<T>) {
+        let y = y.as_();
+        let x = x.as_();
+        let col = self.cols.get_mut(x).unwrap();
+        *col |= 1 << y;
+        let row = self.rows.get_mut(y).unwrap();
+        *row |= 1 << x;
+    }
+
+    pub fn unset(&mut self, &Pos { x, y }: &Pos<T>) {
+        let y = y.as_();
+        let x = x.as_();
+
+        let col = self.cols.get_mut(x).unwrap();
+        *col &= !(1 << y);
+        let row = self.rows.get_mut(y).unwrap();
+        *row &= 1 << x;
+    }
+
+    pub fn iter(&self) -> BitMapIterator<T> {
+        BitMapIterator {
+            row_idx: 0,
+            rows: self.rows.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct BitMapIterator<T> {
+    row_idx: usize,
+    rows: Vec<u128>,
+    phantom: PhantomData<T>,
+}
+
+impl<T> Iterator for BitMapIterator<T>
+where
+    T: Display + std::convert::TryFrom<u32> + std::convert::TryFrom<usize>,
+    <T as std::convert::TryFrom<usize>>::Error: std::fmt::Debug,
+    <T as std::convert::TryFrom<u32>>::Error: std::fmt::Debug,
+{
+    type Item = Pos<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.row_idx >= self.rows.len() {
+                return None;
+            }
+
+            let row = self.rows[self.row_idx];
+            let least_sig = row & row.wrapping_neg();
+            let res = least_sig.trailing_zeros();
+            if res == 128 {
+                self.row_idx += 1;
+                continue;
+            }
+            self.rows[self.row_idx] &= !(least_sig);
+
+            let pos = Pos::new(
+                T::try_from(res).unwrap(),
+                T::try_from(self.row_idx).unwrap(),
+            );
+            return Some(pos);
+        }
+    }
+}
+
 pub fn read_input(year: i32, day: u32) -> String {
     let utc_now: DateTime<Utc> = chrono::Utc::now();
     let start = Eastern.with_ymd_and_hms(year, 12, day, 0, 0, 0).unwrap();
@@ -551,4 +647,26 @@ macro_rules! generate_test {
 
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bitmap_iter() {
+        let mut bm = BitMap::new(10, 10);
+        bm.set(&Pos::new(5, 5));
+        assert_eq!(vec![Pos::new(5, 5)], bm.iter().collect::<Vec<_>>());
+        bm.set(&Pos::new(1, 1));
+        assert_eq!(
+            vec![Pos::new(1, 1), Pos::new(5, 5)],
+            bm.iter().collect::<Vec<_>>()
+        );
+        bm.set(&Pos::new(1, 2));
+        assert_eq!(
+            vec![Pos::new(1, 1), Pos::new(1, 2), Pos::new(5, 5)],
+            bm.iter().collect::<Vec<_>>()
+        );
+    }
 }

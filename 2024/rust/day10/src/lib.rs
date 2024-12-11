@@ -1,15 +1,15 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use itertools::Itertools;
-use util::Pos;
+use util::{BitMap, Pos};
 
 type InputType = Map;
 type OutType = usize;
 
 pub struct Map {
     points: HashMap<Pos<u8>, usize>,
-    trailheads: HashSet<Pos<u8>>,
-    peaks: HashSet<Pos<u8>>,
+    trailheads: BitMap<u8>,
+    peaks: BitMap<u8>,
     max_x: u8,
     max_y: u8,
 }
@@ -17,8 +17,10 @@ pub struct Map {
 #[allow(unused_variables)]
 pub fn parse(data: &str) -> InputType {
     let mut points = HashMap::new();
-    let mut trailheads = HashSet::new();
-    let mut peaks = HashSet::new();
+    let width = data.lines().next().unwrap().len();
+    let height = data.lines().count();
+    let mut trailheads = BitMap::new(width, height);
+    let mut peaks = BitMap::new(width, height);
     let mut max_x: u8 = 0;
     let mut max_y: u8 = 0;
 
@@ -28,10 +30,10 @@ pub fn parse(data: &str) -> InputType {
             let height: usize = char.to_digit(10).unwrap() as usize;
             points.insert(pos.clone(), height);
             if height == 0 {
-                trailheads.insert(pos.clone());
+                trailheads.set(&pos);
             }
             if height == 9 {
-                peaks.insert(pos.clone());
+                peaks.set(&pos);
             }
             if x as u8 > max_x {
                 max_x = x as u8;
@@ -87,7 +89,7 @@ pub fn part1(map: InputType) -> OutType {
     map.trailheads
         .iter()
         .cartesian_product(map.peaks.iter())
-        .filter(|(trailhead, peak)| num_paths(&map, trailhead, peak, None) > 0)
+        .filter(|(trail, peak)| num_paths(&map, trail, peak, None) > 0)
         .count()
 }
 
@@ -96,7 +98,7 @@ pub fn part2(map: InputType) -> OutType {
     map.trailheads
         .iter()
         .cartesian_product(map.peaks.iter())
-        .map(|(trailhead, peak)| num_paths(&map, trailhead, peak, None))
+        .map(|(trail, peak)| num_paths(&map, &trail, &peak, None))
         .sum()
 }
 
