@@ -7,14 +7,14 @@ type OutType = usize;
 
 #[derive(Debug)]
 pub struct Map {
-    antennae: HashMap<char, HashSet<Pos<i32>>>,
-    max_x: i32,
-    max_y: i32,
+    antennae: HashMap<char, HashSet<Pos<i8>>>,
+    max_x: i8,
+    max_y: i8,
 }
 
 #[allow(unused_variables)]
 pub fn parse(data: &str) -> Map {
-    let mut antennae: HashMap<char, HashSet<Pos<i32>>> = HashMap::new();
+    let mut antennae: HashMap<char, HashSet<Pos<i8>>> = HashMap::new();
     let mut max_x = 0;
     let mut max_y = 0;
 
@@ -27,7 +27,7 @@ pub fn parse(data: &str) -> Map {
                 continue;
             }
 
-            let point = Pos::new(x as i32, y as i32);
+            let point = Pos::new(x as i8, y as i8);
 
             antennae
                 .entry(c)
@@ -43,16 +43,16 @@ pub fn parse(data: &str) -> Map {
 
     Map {
         antennae,
-        max_x: max_x as i32,
-        max_y: max_y as i32,
+        max_x: max_x as i8,
+        max_y: max_y as i8,
     }
 }
 
-fn in_bounds(p: &Pos<i32>, max_x: i32, max_y: i32) -> bool {
+fn in_bounds(p: &Pos<i8>, max_x: i8, max_y: i8) -> bool {
     p.x >= 0 && p.x <= max_x && p.y >= 0 && p.y <= max_y
 }
 
-fn translate(p: &Pos<i32>, x: i32, y: i32, max_x: i32, max_y: i32) -> Option<Pos<i32>> {
+fn translate(p: &Pos<i8>, x: i8, y: i8, max_x: i8, max_y: i8) -> Option<Pos<i8>> {
     let new = Pos::new(p.x + x, p.y + y);
     if in_bounds(&new, max_x, max_y) {
         return Some(new);
