@@ -17,7 +17,7 @@ pub enum Direction {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Direction3 {
+pub enum Direction3D {
     N,
     E,
     S,
@@ -151,38 +151,38 @@ where
         Self { x, y, z }
     }
 
-    pub fn translate(&self, direction: &Direction3) -> Option<Self> {
+    pub fn translate(&self, direction: &Direction3D) -> Option<Self> {
         self.translate_n(direction, 1)
     }
 
-    pub fn translate_n(&self, direction: &Direction3, n: usize) -> Option<Self> {
+    pub fn translate_n(&self, direction: &Direction3D, n: usize) -> Option<Self> {
         let (x, y, z) = match direction {
-            Direction3::N => (
+            Direction3D::N => (
                 self.x,
                 self.y.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
                 self.z,
             ),
-            Direction3::S => (
+            Direction3D::S => (
                 self.x,
                 self.y.checked_add(&num_traits::cast::<usize, T>(n)?)?,
                 self.z,
             ),
-            Direction3::W => (
+            Direction3D::W => (
                 self.x.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
                 self.y,
                 self.z,
             ),
-            Direction3::E => (
+            Direction3D::E => (
                 self.x.checked_add(&num_traits::cast::<usize, T>(n)?)?,
                 self.y,
                 self.z,
             ),
-            Direction3::I => (
+            Direction3D::I => (
                 self.x,
                 self.y,
                 self.z.checked_add(&num_traits::cast::<usize, T>(n)?)?,
             ),
-            Direction3::O => (
+            Direction3D::O => (
                 self.x,
                 self.y,
                 self.z.checked_sub(&num_traits::cast::<usize, T>(n)?)?,
@@ -288,11 +288,11 @@ where
         self.min.z.min(self.max.z)
     }
 
-    pub fn translate(&self, direction: &Direction3) -> Option<Self> {
+    pub fn translate(&self, direction: &Direction3D) -> Option<Self> {
         self.translate_n(direction, 1)
     }
 
-    pub fn translate_n(&self, direction: &Direction3, n: usize) -> Option<Self> {
+    pub fn translate_n(&self, direction: &Direction3D, n: usize) -> Option<Self> {
         let min = self.min.translate_n(direction, n)?;
         let max = self.max.translate_n(direction, n)?;
         Some(Self::new(min, max))

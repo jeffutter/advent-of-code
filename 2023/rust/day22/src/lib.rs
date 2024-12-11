@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use itertools::Itertools;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-use util::{Cube, Direction3, Point3};
+use util::{Cube, Direction3D, Point3};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Brick {
@@ -11,7 +11,7 @@ pub struct Brick {
 }
 
 impl Brick {
-    fn translate(&self, d: &Direction3) -> Option<Self> {
+    fn translate(&self, d: &Direction3D) -> Option<Self> {
         self.cube
             .translate(d)
             .map(|cube| Self { cube, id: self.id })
@@ -61,7 +61,7 @@ impl Stack {
                 if brick.min_z() <= 1 {
                     continue;
                 }
-                if let Some(new_brick) = brick.translate(&Direction3::O) {
+                if let Some(new_brick) = brick.translate(&Direction3D::O) {
                     let mut new_stack = self.clone();
                     new_stack.bricks.remove(i);
 
