@@ -65,16 +65,86 @@ where
 
 impl<T> Pos<T>
 where
+    T: Display,
+{
+    pub fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+impl<T> Pos<T>
+where
     T: Copy
         + Display
         + num_traits::NumCast
-        + std::ops::Sub<T, Output = T>
+        + num_traits::ops::checked::CheckedAdd
         + num_traits::ops::checked::CheckedSub
+        + std::cmp::PartialEq
         + std::ops::Add<T, Output = T>
-        + num_traits::ops::checked::CheckedAdd,
+        + std::ops::Sub<T, Output = T>,
 {
-    pub fn new_unsigned(x: T, y: T) -> Self {
-        Self { x, y }
+    pub fn successors_4_unsigned(&self) -> Vec<Self> {
+        let &Self { x, y } = self;
+        let one: T = num_traits::cast(1).unwrap();
+        let zero: T = num_traits::cast(0).unwrap();
+        match (x, y) {
+            (x, y) if x == zero && y == zero => {
+                vec![Self::new(x + one, y), Self::new(x, y + one)]
+            }
+            (x, _) if x == zero => vec![
+                Self::new(x + one, y),
+                Self::new(x, y - one),
+                Self::new(x, y + one),
+            ],
+            (_, y) if y == zero => vec![
+                Self::new(x - one, y),
+                Self::new(x + one, y),
+                Self::new(x, y + one),
+            ],
+            (_, _) => vec![
+                Self::new(x - one, y),
+                Self::new(x + one, y),
+                Self::new(x, y - one),
+                Self::new(x, y + one),
+            ],
+        }
+    }
+
+    pub fn successors_8_unsigned(&self) -> Vec<Self> {
+        let &Self { x, y } = self;
+        let one: T = num_traits::cast(1).unwrap();
+        let zero: T = num_traits::cast(0).unwrap();
+        match (x, y) {
+            (x, y) if x == zero && y == zero => vec![
+                Self::new(x + one, y),
+                Self::new(x, y + one),
+                Self::new(x + one, y + one),
+            ],
+            (x, _) if x == zero => vec![
+                Self::new(x, y - one),
+                Self::new(x + one, y - one),
+                Self::new(x + one, y),
+                Self::new(x, y + one),
+                Self::new(x + one, y + one),
+            ],
+            (_, y) if y == zero => vec![
+                Self::new(x - one, y),
+                Self::new(x + one, y),
+                Self::new(x - one, y + one),
+                Self::new(x, y + one),
+                Self::new(x + one, y + one),
+            ],
+            (_, _) => vec![
+                Self::new(x - one, y - one),
+                Self::new(x, y - one),
+                Self::new(x + one, y - one),
+                Self::new(x - one, y),
+                Self::new(x + one, y),
+                Self::new(x - one, y + one),
+                Self::new(x, y + one),
+                Self::new(x + one, y + one),
+            ],
+        }
     }
 
     pub fn translate(&self, direction: &Direction) -> Option<Self> {
@@ -132,19 +202,15 @@ where
         + Display
         + num_traits::NumCast
         + num_traits::Signed
-        + std::ops::Sub<T, Output = T>
+        + std::cmp::PartialOrd
         + std::ops::Add<T, Output = T>
-        + std::cmp::PartialOrd,
+        + std::ops::Sub<T, Output = T>,
 {
-    pub fn new(x: T, y: T) -> Self {
-        Self { x, y }
-    }
-
-    pub fn manhattan_distance(&self, other: &Pos<T>) -> T {
+    pub fn manhattan_distance(&self, other: &Self) -> T {
         (self.x - other.x).abs() + (self.y - other.y).abs()
     }
 
-    pub fn distance(&self, other: &Pos<T>) -> f64 {
+    pub fn distance(&self, other: &Self) -> f64 {
         let self_x: f64 = num_traits::cast(self.x).unwrap();
         let self_y: f64 = num_traits::cast(self.y).unwrap();
         let other_x: f64 = num_traits::cast(other.y).unwrap();
@@ -153,29 +219,29 @@ where
         ((other_x - self_x).abs().powi(2) + (other_y - self_y).abs().powi(2)).sqrt()
     }
 
-    pub fn successors_4(&self) -> Vec<Pos<T>> {
-        let &Pos { x, y } = self;
+    pub fn successors_4(&self) -> Vec<Self> {
+        let &Self { x, y } = self;
         let one: T = num_traits::cast(1).unwrap();
         vec![
-            Pos::new(x - one, y),
-            Pos::new(x + one, y),
-            Pos::new(x, y - one),
-            Pos::new(x, y + one),
+            Self::new(x - one, y),
+            Self::new(x + one, y),
+            Self::new(x, y - one),
+            Self::new(x, y + one),
         ]
     }
 
-    pub fn successors_8(&self) -> Vec<Pos<T>> {
-        let &Pos { x, y } = self;
+    pub fn successors_8(&self) -> Vec<Self> {
+        let &Self { x, y } = self;
         let one: T = num_traits::cast(1).unwrap();
         vec![
-            Pos::new(x - one, y - one),
-            Pos::new(x, y - one),
-            Pos::new(x + one, y - one),
-            Pos::new(x - one, y),
-            Pos::new(x + one, y),
-            Pos::new(x - one, y + one),
-            Pos::new(x, y + one),
-            Pos::new(x + one, y + one),
+            Self::new(x - one, y - one),
+            Self::new(x, y - one),
+            Self::new(x + one, y - one),
+            Self::new(x - one, y),
+            Self::new(x + one, y),
+            Self::new(x - one, y + one),
+            Self::new(x, y + one),
+            Self::new(x + one, y + one),
         ]
     }
 

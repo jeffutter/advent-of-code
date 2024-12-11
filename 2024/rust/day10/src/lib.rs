@@ -7,11 +7,11 @@ type InputType = Map;
 type OutType = usize;
 
 pub struct Map {
-    points: HashMap<Pos<i32>, usize>,
-    trailheads: HashSet<Pos<i32>>,
-    peaks: HashSet<Pos<i32>>,
-    max_x: i32,
-    max_y: i32,
+    points: HashMap<Pos<u8>, usize>,
+    trailheads: HashSet<Pos<u8>>,
+    peaks: HashSet<Pos<u8>>,
+    max_x: u8,
+    max_y: u8,
 }
 
 #[allow(unused_variables)]
@@ -19,12 +19,12 @@ pub fn parse(data: &str) -> InputType {
     let mut points = HashMap::new();
     let mut trailheads = HashSet::new();
     let mut peaks = HashSet::new();
-    let mut max_x: i32 = 0;
-    let mut max_y: i32 = 0;
+    let mut max_x: u8 = 0;
+    let mut max_y: u8 = 0;
 
     for (y, line) in data.lines().enumerate() {
         for (x, char) in line.chars().enumerate() {
-            let pos = Pos::new(x as i32, y as i32);
+            let pos = Pos::new(x as u8, y as u8);
             let height: usize = char.to_digit(10).unwrap() as usize;
             points.insert(pos.clone(), height);
             if height == 0 {
@@ -33,12 +33,12 @@ pub fn parse(data: &str) -> InputType {
             if height == 9 {
                 peaks.insert(pos.clone());
             }
-            if x as i32 > max_x {
-                max_x = x as i32;
+            if x as u8 > max_x {
+                max_x = x as u8;
             }
         }
-        if y as i32 > max_y {
-            max_y = y as i32;
+        if y as u8 > max_y {
+            max_y = y as u8;
         }
     }
 
@@ -51,15 +51,15 @@ pub fn parse(data: &str) -> InputType {
     }
 }
 
-fn num_paths(map: &Map, cur: &Pos<i32>, peak: &Pos<i32>, last: Option<&Pos<i32>>) -> usize {
+fn num_paths(map: &Map, cur: &Pos<u8>, peak: &Pos<u8>, last: Option<&Pos<u8>>) -> usize {
     if peak == cur {
         return 1;
     }
 
-    cur.successors_4()
+    cur.successors_4_unsigned()
         .iter()
         .filter(|next| {
-            if next.x < 0 || next.y < 0 || next.x > map.max_x || next.y > map.max_y {
+            if next.x > map.max_x || next.y > map.max_y {
                 return false;
             }
 

@@ -18,28 +18,28 @@ pub trait FromDig {
 impl FromDig for u32 {
     type Num = u32;
     fn from_dig(s: &str) -> IResult<&str, Self::Num> {
-        map_res(digit1, |s: &str| u32::from_str_radix(s, 10))(s)
+        map_res(digit1, |s: &str| s.parse::<u32>())(s)
     }
 }
 
 impl FromDig for i32 {
     type Num = i32;
     fn from_dig(s: &str) -> IResult<&str, Self::Num> {
-        map_res(digit1, |s: &str| i32::from_str_radix(s, 10))(s)
+        map_res(digit1, |s: &str| s.parse::<i32>())(s)
     }
 }
 
 impl FromDig for i64 {
     type Num = i64;
     fn from_dig(s: &str) -> IResult<&str, Self::Num> {
-        map_res(digit1, |s: &str| i64::from_str_radix(s, 10))(s)
+        map_res(digit1, |s: &str| s.parse::<i64>())(s)
     }
 }
 
 impl FromDig for usize {
     type Num = usize;
     fn from_dig(s: &str) -> IResult<&str, Self::Num> {
-        map_res(digit1, |s: &str| usize::from_str_radix(s, 10))(s)
+        map_res(digit1, |s: &str| s.parse::<usize>())(s)
     }
 }
 
@@ -49,6 +49,6 @@ pub fn separated_digits(s: &str) -> IResult<&str, Vec<i32>> {
 
 pub fn signed_dig(s: &str) -> IResult<&str, i32> {
     map_res(recognize(tuple((opt(char('-')), digit1))), |s: &str| {
-        i32::from_str_radix(s, 10)
+        s.parse::<i32>()
     })(s)
 }
