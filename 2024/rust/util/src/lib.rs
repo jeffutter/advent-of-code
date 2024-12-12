@@ -1,10 +1,11 @@
 use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::US::Eastern;
 use num_traits::AsPrimitive;
+use std::fmt::Write as _;
 use std::fmt::{Debug, Display};
 use std::fs;
 use std::fs::File;
-use std::io::Write;
+use std::io::Write as _;
 use std::marker::PhantomData;
 use std::ops::RangeBounds;
 use std::path::Path;
@@ -440,11 +441,13 @@ where
     }
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct BitMap<T> {
-    cols: Vec<u128>,
-    rows: Vec<u128>,
+    pub cols: Vec<u128>,
+    pub rows: Vec<u128>,
     phantom: PhantomData<T>,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl<T> BitMap<T>
@@ -455,6 +458,8 @@ where
         Self {
             cols: vec![0; width],
             rows: vec![0; height],
+            width,
+            height,
             phantom: PhantomData,
         }
     }
@@ -462,9 +467,10 @@ where
     pub fn present(&self, &Pos { x, y }: &Pos<T>) -> bool {
         let y = y.as_();
         let x = x.as_();
-        let col = self.cols.get(x).unwrap();
-
-        col & (1 << y) > 0
+        if let Some(col) = self.cols.get(x) {
+            return col & (1 << y) > 0;
+        }
+        false
     }
 
     pub fn set(&mut self, &Pos { x, y }: &Pos<T>) {
@@ -483,7 +489,7 @@ where
         let col = self.cols.get_mut(x).unwrap();
         *col &= !(1 << y);
         let row = self.rows.get_mut(y).unwrap();
-        *row &= 1 << x;
+        *row &= !(1 << x);
     }
 
     pub fn iter(&self) -> BitMapIterator<T> {
@@ -495,7 +501,28 @@ where
     }
 }
 
-#[derive(Clone)]
+impl<T> Debug for BitMap<T>
+where
+    T: Display + AsPrimitive<usize> + std::convert::From<usize>,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for y in 0..self.width {
+            for x in 0..self.height {
+                let point: Pos<T> = Pos::new(x.into(), y.into());
+                if self.present(&point) {
+                    f.write_char('x')?;
+                } else {
+                    f.write_char('.')?;
+                }
+            }
+            f.write_char('\n')?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct BitMapIterator<T> {
     row_idx: usize,
     rows: Vec<u128>,
@@ -504,7 +531,7 @@ pub struct BitMapIterator<T> {
 
 impl<T> Iterator for BitMapIterator<T>
 where
-    T: Display + std::convert::TryFrom<u32> + std::convert::TryFrom<usize>,
+    T: Display + std::convert::TryFrom<u32> + std::convert::TryFrom<usize> + std::fmt::Debug,
     <T as std::convert::TryFrom<usize>>::Error: std::fmt::Debug,
     <T as std::convert::TryFrom<u32>>::Error: std::fmt::Debug,
 {
@@ -529,6 +556,7 @@ where
                 T::try_from(res).unwrap(),
                 T::try_from(self.row_idx).unwrap(),
             );
+
             return Some(pos);
         }
     }
@@ -668,5 +696,321 @@ mod tests {
             vec![Pos::new(1, 1), Pos::new(1, 2), Pos::new(5, 5)],
             bm.iter().collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn bitmap_unset() {
+        let mut bm = BitMap::new(10, 10);
+        let pos = Pos::new(5, 5);
+        bm.set(&pos);
+        assert!(bm.present(&pos));
+        bm.unset(&pos);
+        assert!(!bm.present(&pos));
+        assert!(!bm.present(&pos));
+    }
+
+    #[test]
+    fn bitmap() {
+        let map: BitMap<usize> = BitMap {
+            rows: vec![
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                67110912,
+                67110912,
+                17112763393,
+                8522828801,
+                255211775190703847597530955590737594391,
+                255211775190703847597530955590989253855,
+                170141183460469231731687303723366747903,
+                170141183460469231731687303716941074431,
+                170141183467510015705122904033651068927,
+                255211775200452625406903325240787472383,
+                319014718990778318323029118750939942911,
+                297747071057987550599202196984910843871,
+                297747071056904353064827489243333922687,
+                297747071055975898035363454037159579647,
+                127605887595351923798765477786913083391,
+                170141183460469231731687303715884109823,
+                4095,
+                4095,
+                2047,
+                1532,
+                184,
+                48,
+                0,
+                0,
+            ],
+            cols: vec![
+                42202988866171078964695874163900940288,
+                19938419936773738093557105904205168640,
+                41206067869332392060018018868690681856,
+                34559927890407812695498983567288958976,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                77095223755525120628420809496259985408,
+                337623910929368631717566993311207522304,
+                338870062175416990348414312430220345344,
+                338620831926207318622244848606417780736,
+                339950059921992234495148655666698125312,
+                339950059921992234495148655666698125312,
+                68787548781869396422772015369507831808,
+                31569164899891751981465417681658183680,
+                10301516967333098015004504717172670464,
+                4319990986300976586937372945911119872,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                106338239662793269832304564822427566080,
+                148873535527910577765226390751398592515,
+                297747071055821155530452781502797185025,
+                319014718988379809496913694467282698241,
+                319014718988379809496913694467282698240,
+                42535295865117307932921825928971026432,
+                63802943797675961899382738893456539648,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                85070591730234615865843651857942052864,
+                255211775190703847597530955573826158599,
+                301734755043175903149164202683638218759,
+                338953138925153547590470800371487866891,
+                338953138925153547590470800371487867007,
+                338953138925153547590470800371487867007,
+                338953138925153547590470800371487867135,
+                337623910929368631717566993311207522815,
+                338953138925153547590470800371487867903,
+                164824271477329568240072075474762728447,
+                337623910929368631717566993311207522559,
+                337623910929368631717566993311207522814,
+                329648542954659136480144150949525455103,
+                334965454937798799971759379190646833279,
+                338620831926207318622244848606417780991,
+                340199290171201906221318119490500689983,
+            ],
+            width: 140,
+            height: 140,
+            phantom: PhantomData,
+        };
+
+        let present = map
+            .iter()
+            .map(|p| {
+                println!("{:?}", p);
+                (p.clone(), map.present(&p))
+            })
+            .collect::<Vec<_>>();
+        println!("{:?}", present);
+
+        assert!(map.iter().any(|p| p == Pos::new(11, 116)));
+        assert!(map.present(&Pos::new(11, 116)));
     }
 }
