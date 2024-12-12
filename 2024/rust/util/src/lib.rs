@@ -1,3 +1,4 @@
+use bitvec_simd::BitVec;
 use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::US::Eastern;
 use num_traits::AsPrimitive;
@@ -441,10 +442,9 @@ where
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, PartialEq)]
 pub struct BitMap<T> {
-    pub cols: Vec<u128>,
-    pub rows: Vec<u128>,
+    pub cols: Vec<BitVec>,
     phantom: PhantomData<T>,
     pub width: usize,
     pub height: usize,
@@ -452,12 +452,11 @@ pub struct BitMap<T> {
 
 impl<T> BitMap<T>
 where
-    T: Display + AsPrimitive<usize>,
+    T: Display + AsPrimitive<usize> + std::convert::TryFrom<usize>,
 {
     pub fn new(width: usize, height: usize) -> Self {
         Self {
-            cols: vec![0; width],
-            rows: vec![0; height],
+            cols: vec![BitVec::zeros(height); width],
             width,
             height,
             phantom: PhantomData,
@@ -467,37 +466,53 @@ where
     pub fn present(&self, &Pos { x, y }: &Pos<T>) -> bool {
         let y = y.as_();
         let x = x.as_();
+
         if let Some(col) = self.cols.get(x) {
-            return col & (1 << y) > 0;
+            return col.get(y).unwrap_or(false);
         }
+
         false
     }
 
     pub fn set(&mut self, &Pos { x, y }: &Pos<T>) {
         let y = y.as_();
         let x = x.as_();
-        let col = self.cols.get_mut(x).unwrap();
-        *col |= 1 << y;
-        let row = self.rows.get_mut(y).unwrap();
-        *row |= 1 << x;
+
+        if let Some(col) = self.cols.get_mut(x) {
+            col.set(y, true);
+        }
     }
 
     pub fn unset(&mut self, &Pos { x, y }: &Pos<T>) {
         let y = y.as_();
         let x = x.as_();
 
-        let col = self.cols.get_mut(x).unwrap();
-        *col &= !(1 << y);
-        let row = self.rows.get_mut(y).unwrap();
-        *row &= !(1 << x);
+        if let Some(col) = self.cols.get_mut(x) {
+            col.set(y, false)
+        }
     }
 
-    pub fn iter(&self) -> BitMapIterator<T> {
-        BitMapIterator {
-            row_idx: 0,
-            rows: self.rows.clone(),
-            phantom: PhantomData,
-        }
+    pub fn len(&self) -> usize {
+        self.cols.iter().map(|col| col.count_ones()).sum()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cols.iter().all(|col| col.is_empty())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = Pos<T>> + Clone
+    where
+        <T as std::convert::TryFrom<usize>>::Error: std::fmt::Debug,
+    {
+        self.cols
+            .clone()
+            .into_iter()
+            .enumerate()
+            .flat_map(|(x, bvec)| {
+                bvec.into_usizes()
+                    .into_iter()
+                    .map(move |y| Pos::new(x.try_into().unwrap(), y.try_into().unwrap()))
+            })
     }
 }
 
@@ -519,46 +534,6 @@ where
         }
 
         Ok(())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct BitMapIterator<T> {
-    row_idx: usize,
-    rows: Vec<u128>,
-    phantom: PhantomData<T>,
-}
-
-impl<T> Iterator for BitMapIterator<T>
-where
-    T: Display + std::convert::TryFrom<u32> + std::convert::TryFrom<usize> + std::fmt::Debug,
-    <T as std::convert::TryFrom<usize>>::Error: std::fmt::Debug,
-    <T as std::convert::TryFrom<u32>>::Error: std::fmt::Debug,
-{
-    type Item = Pos<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.row_idx >= self.rows.len() {
-                return None;
-            }
-
-            let row = self.rows[self.row_idx];
-            let least_sig = row & row.wrapping_neg();
-            let res = least_sig.trailing_zeros();
-            if res == 128 {
-                self.row_idx += 1;
-                continue;
-            }
-            self.rows[self.row_idx] &= !(least_sig);
-
-            let pos = Pos::new(
-                T::try_from(res).unwrap(),
-                T::try_from(self.row_idx).unwrap(),
-            );
-
-            return Some(pos);
-        }
     }
 }
 
@@ -682,23 +657,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bitmap_iter() {
-        let mut bm = BitMap::new(10, 10);
-        bm.set(&Pos::new(5, 5));
-        assert_eq!(vec![Pos::new(5, 5)], bm.iter().collect::<Vec<_>>());
-        bm.set(&Pos::new(1, 1));
-        assert_eq!(
-            vec![Pos::new(1, 1), Pos::new(5, 5)],
-            bm.iter().collect::<Vec<_>>()
-        );
-        bm.set(&Pos::new(1, 2));
-        assert_eq!(
-            vec![Pos::new(1, 1), Pos::new(1, 2), Pos::new(5, 5)],
-            bm.iter().collect::<Vec<_>>()
-        );
-    }
-
-    #[test]
     fn bitmap_unset() {
         let mut bm = BitMap::new(10, 10);
         let pos = Pos::new(5, 5);
@@ -709,308 +667,29 @@ mod tests {
         assert!(!bm.present(&pos));
     }
 
-    #[test]
-    fn bitmap() {
-        let map: BitMap<usize> = BitMap {
-            rows: vec![
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                67110912,
-                67110912,
-                17112763393,
-                8522828801,
-                255211775190703847597530955590737594391,
-                255211775190703847597530955590989253855,
-                170141183460469231731687303723366747903,
-                170141183460469231731687303716941074431,
-                170141183467510015705122904033651068927,
-                255211775200452625406903325240787472383,
-                319014718990778318323029118750939942911,
-                297747071057987550599202196984910843871,
-                297747071056904353064827489243333922687,
-                297747071055975898035363454037159579647,
-                127605887595351923798765477786913083391,
-                170141183460469231731687303715884109823,
-                4095,
-                4095,
-                2047,
-                1532,
-                184,
-                48,
-                0,
-                0,
-            ],
-            cols: vec![
-                42202988866171078964695874163900940288,
-                19938419936773738093557105904205168640,
-                41206067869332392060018018868690681856,
-                34559927890407812695498983567288958976,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                77095223755525120628420809496259985408,
-                337623910929368631717566993311207522304,
-                338870062175416990348414312430220345344,
-                338620831926207318622244848606417780736,
-                339950059921992234495148655666698125312,
-                339950059921992234495148655666698125312,
-                68787548781869396422772015369507831808,
-                31569164899891751981465417681658183680,
-                10301516967333098015004504717172670464,
-                4319990986300976586937372945911119872,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                106338239662793269832304564822427566080,
-                148873535527910577765226390751398592515,
-                297747071055821155530452781502797185025,
-                319014718988379809496913694467282698241,
-                319014718988379809496913694467282698240,
-                42535295865117307932921825928971026432,
-                63802943797675961899382738893456539648,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                85070591730234615865843651857942052864,
-                255211775190703847597530955573826158599,
-                301734755043175903149164202683638218759,
-                338953138925153547590470800371487866891,
-                338953138925153547590470800371487867007,
-                338953138925153547590470800371487867007,
-                338953138925153547590470800371487867135,
-                337623910929368631717566993311207522815,
-                338953138925153547590470800371487867903,
-                164824271477329568240072075474762728447,
-                337623910929368631717566993311207522559,
-                337623910929368631717566993311207522814,
-                329648542954659136480144150949525455103,
-                334965454937798799971759379190646833279,
-                338620831926207318622244848606417780991,
-                340199290171201906221318119490500689983,
-            ],
-            width: 140,
-            height: 140,
-            phantom: PhantomData,
-        };
+    use proptest::prelude::*;
 
-        let present = map
-            .iter()
-            .map(|p| {
-                println!("{:?}", p);
-                (p.clone(), map.present(&p))
-            })
-            .collect::<Vec<_>>();
-        println!("{:?}", present);
+    proptest! {
+        #[test]
+        fn bitmap_iter(
+            ps in prop::collection::hash_set((0usize..1000usize, 0usize..1000usize).prop_map(|p|
+                Pos::new(p.0, p.1)
+            ), 0..1000)) {
+            let mut bm = BitMap::new(1000, 1000);
 
-        assert!(map.iter().any(|p| p == Pos::new(11, 116)));
-        assert!(map.present(&Pos::new(11, 116)));
+            for p in ps.iter() {
+                bm.set(p);
+            }
+
+            for p in ps.iter() {
+                assert!(bm.present(p));
+            }
+
+            assert_eq!(bm.iter().count(), ps.len());
+
+            for p in bm.iter() {
+                assert!(ps.contains(&p));
+            }
+        }
     }
 }
