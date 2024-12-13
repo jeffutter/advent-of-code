@@ -83,8 +83,8 @@ fn count_exterrior_corners(map: &HashSet<Pos<usize>>, p: &Pos<usize>) -> usize {
         .iter()
         .map(|(p1, p2)| (p.translate(p1), p.translate(p2)))
         .filter(|(p1, p2)| {
-            !p1.clone().map(|p1| map.contains(&p1)).unwrap_or(false)
-                && !p2.clone().map(|p2| map.contains(&p2)).unwrap_or(false)
+            !p1.as_ref().map(|p1| map.contains(p1)).unwrap_or(false)
+                && !p2.as_ref().map(|p2| map.contains(p2)).unwrap_or(false)
         })
         .count()
 }
@@ -107,9 +107,9 @@ fn count_interrior_corners(map: &HashSet<Pos<usize>>, p: &Pos<usize>) -> usize {
             )
         })
         .filter(|(p1, p2, p3)| {
-            p1.clone().map(|p1| map.contains(&p1)).unwrap_or(false)
-                && p2.clone().map(|p2| map.contains(&p2)).unwrap_or(false)
-                && !p3.clone().map(|p3| map.contains(&p3)).unwrap_or(false)
+            p1.as_ref().map(|p1| map.contains(p1)).unwrap_or(false)
+                && p2.as_ref().map(|p2| map.contains(p2)).unwrap_or(false)
+                && !p3.as_ref().map(|p3| map.contains(p3)).unwrap_or(false)
         })
         .count()
 }
