@@ -36,6 +36,13 @@ impl FromDig for i64 {
     }
 }
 
+impl FromDig for i128 {
+    type Num = i128;
+    fn from_dig(s: &str) -> IResult<&str, Self::Num> {
+        map_res(digit1, |s: &str| s.parse::<i128>())(s)
+    }
+}
+
 impl FromDig for usize {
     type Num = usize;
     fn from_dig(s: &str) -> IResult<&str, Self::Num> {
