@@ -30,10 +30,10 @@ pub fn parse(data: &str) -> InputType {
             let height: usize = char.to_digit(10).unwrap() as usize;
             points.insert(pos.clone(), height);
             if height == 0 {
-                trailheads.set(&pos);
+                trailheads.insert(&pos);
             }
             if height == 9 {
-                peaks.set(&pos);
+                peaks.insert(&pos);
             }
             if x as u8 > max_x {
                 max_x = x as u8;

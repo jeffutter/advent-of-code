@@ -463,7 +463,7 @@ where
         }
     }
 
-    pub fn present(&self, &Pos { x, y }: &Pos<T>) -> bool {
+    pub fn contains(&self, &Pos { x, y }: &Pos<T>) -> bool {
         let y = y.as_();
         let x = x.as_();
 
@@ -474,7 +474,7 @@ where
         false
     }
 
-    pub fn set(&mut self, &Pos { x, y }: &Pos<T>) {
+    pub fn insert(&mut self, &Pos { x, y }: &Pos<T>) {
         let y = y.as_();
         let x = x.as_();
 
@@ -483,7 +483,7 @@ where
         }
     }
 
-    pub fn unset(&mut self, &Pos { x, y }: &Pos<T>) {
+    pub fn remove(&mut self, &Pos { x, y }: &Pos<T>) {
         let y = y.as_();
         let x = x.as_();
 
@@ -524,7 +524,7 @@ where
         for y in 0..self.width {
             for x in 0..self.height {
                 let point: Pos<T> = Pos::new(x.into(), y.into());
-                if self.present(&point) {
+                if self.contains(&point) {
                     f.write_char('x')?;
                 } else {
                     f.write_char('.')?;
@@ -657,14 +657,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bitmap_unset() {
+    fn bitmap_remove() {
         let mut bm = BitMap::new(10, 10);
         let pos = Pos::new(5, 5);
-        bm.set(&pos);
-        assert!(bm.present(&pos));
-        bm.unset(&pos);
-        assert!(!bm.present(&pos));
-        assert!(!bm.present(&pos));
+        bm.insert(&pos);
+        assert!(bm.contains(&pos));
+        bm.remove(&pos);
+        assert!(!bm.contains(&pos));
+        assert!(!bm.contains(&pos));
     }
 
     use proptest::prelude::*;
@@ -672,17 +672,17 @@ mod tests {
     proptest! {
         #[test]
         fn bitmap_iter(
-            ps in prop::collection::hash_set((0usize..1000usize, 0usize..1000usize).prop_map(|p|
+            ps in prop::collection::hash_insert((0usize..1000usize, 0usize..1000usize).prop_map(|p|
                 Pos::new(p.0, p.1)
             ), 0..1000)) {
             let mut bm = BitMap::new(1000, 1000);
 
             for p in ps.iter() {
-                bm.set(p);
+                bm.insert(p);
             }
 
             for p in ps.iter() {
-                assert!(bm.present(p));
+                assert!(bm.contains(p));
             }
 
             assert_eq!(bm.iter().count(), ps.len());
