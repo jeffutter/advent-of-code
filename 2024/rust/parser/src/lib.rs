@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -8,6 +10,8 @@ use nom::{
     sequence::tuple,
     IResult,
 };
+use num_traits::Signed;
+use util::Pos;
 
 pub trait FromDig {
     type Num;
@@ -50,12 +54,57 @@ impl FromDig for usize {
     }
 }
 
+pub fn point<'a, T>(sep: &str) -> impl Fn(&'a str) -> IResult<&'a str, Pos<T>> + '_
+where
+    T: Display + FromDig<Num = T>,
+{
+    move |s: &'a str| {
+        let (rest, (l, _, r)) =
+            tuple((<T as FromDig>::from_dig, tag(sep), <T as FromDig>::from_dig))(s)?;
+        Ok((rest, Pos::new(l, r)))
+    }
+}
+
+pub fn signed_point<'a, T>(sep: &str) -> impl Fn(&'a str) -> IResult<&'a str, Pos<T>> + '_
+where
+    T: Display + Signed + FromStr,
+{
+    move |s: &'a str| {
+        let (rest, (l, _, r)) = tuple((signed_dig, tag(sep), signed_dig))(s)?;
+        Ok((rest, Pos::new(l, r)))
+    }
+}
+
+pub fn dig_pair<'a, T>(sep: &str) -> impl Fn(&'a str) -> IResult<&'a str, (T, T)> + '_
+where
+    T: Display + FromDig<Num = T>,
+{
+    move |s: &'a str| {
+        let (rest, (l, _, r)) =
+            tuple((<T as FromDig>::from_dig, tag(sep), <T as FromDig>::from_dig))(s)?;
+        Ok((rest, (l, r)))
+    }
+}
+
+pub fn signed_dig_pair<'a, T>(sep: &str) -> impl Fn(&'a str) -> IResult<&'a str, (T, T)> + '_
+where
+    T: Display + Signed + FromStr,
+{
+    move |s: &'a str| {
+        let (rest, (l, _, r)) = tuple((signed_dig, tag(sep), signed_dig))(s)?;
+        Ok((rest, (l, r)))
+    }
+}
+
 pub fn separated_digits(s: &str) -> IResult<&str, Vec<i32>> {
     separated_list1(many1(alt((tag(","), tag(" ")))), <i32 as FromDig>::from_dig)(s)
 }
 
-pub fn signed_dig(s: &str) -> IResult<&str, i32> {
+pub fn signed_dig<T>(s: &str) -> IResult<&str, T>
+where
+    T: Signed + FromStr,
+{
     map_res(recognize(tuple((opt(char('-')), digit1))), |s: &str| {
-        s.parse::<i32>()
+        s.parse::<T>()
     })(s)
 }
