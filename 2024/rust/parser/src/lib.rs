@@ -96,8 +96,11 @@ where
     }
 }
 
-pub fn separated_digits(s: &str) -> IResult<&str, Vec<i32>> {
-    separated_list1(many1(alt((tag(","), tag(" ")))), <i32 as FromDig>::from_dig)(s)
+pub fn separated_digits<'a, T>(sep: &str) -> impl Fn(&'a str) -> IResult<&'a str, Vec<T>> + '_
+where
+    T: Display + FromDig<Num = T>,
+{
+    move |s: &'a str| separated_list1(many1(alt((tag(sep), tag(" ")))), <T as FromDig>::from_dig)(s)
 }
 
 pub fn signed_dig<T>(s: &str) -> IResult<&str, T>
