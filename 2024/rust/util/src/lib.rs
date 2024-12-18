@@ -514,6 +514,17 @@ where
                     .map(move |y| Pos::new(x.try_into().unwrap(), y.try_into().unwrap()))
             })
     }
+
+    pub fn from_iter<'a, I>(iter: I, width: usize, height: usize) -> Self
+    where
+        I: Iterator<Item = &'a Pos<T>>,
+    {
+        let mut bitmap = BitMap::new(width, height);
+        for p in iter {
+            bitmap.insert(p);
+        }
+        bitmap
+    }
 }
 
 impl<T> Debug for BitMap<T>
