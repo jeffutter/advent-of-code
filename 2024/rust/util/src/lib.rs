@@ -76,6 +76,43 @@ where
     }
 }
 
+pub trait AbsDiff<I, O> {
+    fn abs_diff(&self, other: I) -> O;
+}
+
+impl AbsDiff<usize, usize> for usize {
+    fn abs_diff(&self, other: usize) -> usize {
+        usize::abs_diff(*self, other)
+    }
+}
+
+impl AbsDiff<u32, u32> for u32 {
+    fn abs_diff(&self, other: u32) -> u32 {
+        u32::abs_diff(*self, other)
+    }
+}
+
+impl AbsDiff<u16, u16> for u16 {
+    fn abs_diff(&self, other: u16) -> u16 {
+        u16::abs_diff(*self, other)
+    }
+}
+
+impl AbsDiff<u8, u8> for u8 {
+    fn abs_diff(&self, other: u8) -> u8 {
+        u8::abs_diff(*self, other)
+    }
+}
+
+impl<T> Pos<T>
+where
+    T: Copy + Display + num_traits::Unsigned + AbsDiff<T, T>,
+{
+    pub fn manhattan_distance_unsigned(&self, other: &Pos<T>) -> T {
+        self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
+    }
+}
+
 impl<T> Pos<T>
 where
     T: Copy

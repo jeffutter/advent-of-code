@@ -442,6 +442,7 @@ dependencies = [
  "itertools",
  "nom",
  "parser",
+ "pathfinding",
  "util",
 ]
 
