@@ -22,7 +22,7 @@ util::generate_main!(
     day19
     day20
     day21
-    // day22
+    day22
     // day23
     // day24
     // day25
