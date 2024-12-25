@@ -10,3 +10,4 @@ util = { path = "../util" }
 parser = { path = "../parser" }
 itertools = "0.13"
 nom = "7.1.3"
+rayon = "1.10.0"
