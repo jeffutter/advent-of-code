@@ -1,0 +1,20 @@
+[package]
+edition = "2024"
+name = "aoc"
+version = "0.1.0"
+
+[profile.dev]
+split-debuginfo = "unpacked"
+
+[dependencies.day01]
+path = "./day01"
+
+[dependencies.util]
+path = "./util"
+
+[workspace]
+members = [
+    "day01",
+    "parser",
+    "util",
+]
