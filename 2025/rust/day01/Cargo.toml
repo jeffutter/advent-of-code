@@ -7,6 +7,3 @@ edition = "2024"
 
 [dependencies]
 util = { path = "../util" }
-parser = { path = "../parser" }
-itertools = "0.14"
-nom = "8.0.0"
