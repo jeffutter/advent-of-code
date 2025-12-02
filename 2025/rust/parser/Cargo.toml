@@ -6,6 +6,6 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nom = { version = "8.0", features = ["alloc"] }
+winnow = "0.7.14"
 util = { path = "../util" }
 num-traits = "0.2.19"
