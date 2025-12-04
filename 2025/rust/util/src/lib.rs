@@ -2,6 +2,7 @@ use bitvec_simd::BitVec;
 use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::US::Eastern;
 use num_traits::AsPrimitive;
+use std::borrow::Borrow;
 use std::fmt::Write as _;
 use std::fmt::{Debug, Display};
 use std::fs;
@@ -551,13 +552,14 @@ where
             })
     }
 
-    pub fn from_iter<'a, I>(iter: I, width: usize, height: usize) -> Self
+    pub fn from_iter<I, P>(iter: I, width: usize, height: usize) -> Self
     where
-        I: Iterator<Item = &'a Pos<T>>,
+        I: Iterator<Item = P>,
+        P: Borrow<Pos<T>>,
     {
         let mut bitmap = BitMap::new(width, height);
         for p in iter {
-            bitmap.insert(p);
+            bitmap.insert(p.borrow());
         }
         bitmap
     }
