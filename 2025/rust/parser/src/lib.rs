@@ -1,14 +1,14 @@
 use std::{fmt::Display, str::FromStr};
 
+use num_traits::{Signed, Unsigned};
+use util::Pos;
 use winnow::{
+    Parser,
     ascii::digit1,
     combinator::{alt, opt, repeat, separated},
     error::Result,
     token::literal,
-    Parser,
 };
-use num_traits::Signed;
-use util::Pos;
 
 pub trait FromDig {
     type Num;
@@ -40,14 +40,18 @@ impl FromDig for i64 {
 impl FromDig for i128 {
     type Num = i128;
     fn from_dig<'a>(input: &mut &'a str) -> Result<Self::Num> {
-        digit1.try_map(|s: &str| s.parse::<i128>()).parse_next(input)
+        digit1
+            .try_map(|s: &str| s.parse::<i128>())
+            .parse_next(input)
     }
 }
 
 impl FromDig for usize {
     type Num = usize;
     fn from_dig<'a>(input: &mut &'a str) -> Result<Self::Num> {
-        digit1.try_map(|s: &str| s.parse::<usize>()).parse_next(input)
+        digit1
+            .try_map(|s: &str| s.parse::<usize>())
+            .parse_next(input)
     }
 }
 
@@ -122,6 +126,17 @@ where
     <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
 {
     (opt('-'), digit1)
+        .take()
+        .try_map(|s: &str| s.parse::<T>())
+        .parse_next(input)
+}
+
+pub fn dig<T>(input: &mut &str) -> Result<T>
+where
+    T: Unsigned + FromStr,
+    <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
+{
+    digit1
         .take()
         .try_map(|s: &str| s.parse::<T>())
         .parse_next(input)
