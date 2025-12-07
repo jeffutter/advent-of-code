@@ -24,6 +24,9 @@ path = "./day06"
 [dependencies.day07]
 path = "./day07"
 
+[dependencies.day08]
+path = "./day08"
+
 [dependencies.util]
 path = "./util"
 
@@ -36,6 +39,7 @@ members = [
     "day05",
     "day06",
     "day07",
+    "day08",
     "parser",
     "util",
 ]
