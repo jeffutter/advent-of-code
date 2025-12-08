@@ -316,7 +316,9 @@ where
         + Copy
         + num_traits::NumCast
         + num_traits::ops::checked::CheckedSub
-        + num_traits::ops::checked::CheckedAdd,
+        + num_traits::ops::checked::CheckedAdd
+        + num_traits::ops::checked::CheckedMul
+        + AbsDiff<T, T>,
 {
     pub fn new(x: T, y: T, z: T) -> Self {
         Self { x, y, z }
@@ -362,6 +364,25 @@ where
 
         Some(Self::new(x, y, z))
     }
+
+    pub fn straight_line_distance(&self, other: &Point3<T>) -> Option<f32> {
+        // let dx = self.x - other.x;
+        // let dy = self.y - other.y;
+        // let dz = self.z - other.z;
+        //
+        let dx = self.x.abs_diff(other.x);
+        let dy = self.y.abs_diff(other.y);
+        let dz = self.z.abs_diff(other.z);
+
+        let x1 = dx.checked_mul(&dx)?;
+        let y1 = dy.checked_mul(&dy)?;
+        let z1 = dz.checked_mul(&dz)?;
+
+        let r = x1.checked_add(&y1).and_then(|res| res.checked_add(&z1))?;
+        let rf: f32 = num_traits::cast(r)?;
+
+        Some(rf.sqrt())
+    }
 }
 
 impl<T> Debug for Point3<T>
@@ -389,7 +410,9 @@ where
         + Ord
         + num_traits::NumCast
         + num_traits::ops::checked::CheckedSub
-        + num_traits::ops::checked::CheckedAdd,
+        + num_traits::ops::checked::CheckedAdd
+        + num_traits::ops::checked::CheckedMul
+        + AbsDiff<T, T>,
 {
     pub fn new(min: Point3<T>, max: Point3<T>) -> Self {
         Self { min, max }
@@ -436,27 +459,27 @@ where
     }
 
     pub fn max_x(&self) -> T {
-        self.min.x.max(self.max.x)
+        Ord::max(self.min.x, self.max.x)
     }
 
     pub fn min_x(&self) -> T {
-        self.min.x.min(self.max.x)
+        Ord::min(self.min.x, self.max.x)
     }
 
     pub fn max_y(&self) -> T {
-        self.min.y.max(self.max.y)
+        Ord::max(self.min.y, self.max.y)
     }
 
     pub fn min_y(&self) -> T {
-        self.min.y.min(self.max.y)
+        Ord::min(self.min.y, self.max.y)
     }
 
     pub fn max_z(&self) -> T {
-        self.min.z.max(self.max.z)
+        Ord::max(self.min.z, self.max.z)
     }
 
     pub fn min_z(&self) -> T {
-        self.min.z.min(self.max.z)
+        Ord::min(self.min.z, self.max.z)
     }
 
     pub fn translate(&self, direction: &Direction3D) -> Option<Self> {
