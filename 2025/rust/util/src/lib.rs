@@ -301,6 +301,174 @@ where
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Rect<T>
+where
+    T: Copy + Display,
+{
+    pub min: Pos<T>,
+    pub max: Pos<T>,
+}
+
+impl<T> Rect<T>
+where
+    T: Copy
+        + Display
+        + Ord
+        + num_traits::NumCast
+        + num_traits::ops::checked::CheckedSub
+        + num_traits::ops::checked::CheckedAdd
+        + num_traits::ops::checked::CheckedMul
+        + AbsDiff<T, T>,
+{
+    pub fn new(min: Pos<T>, max: Pos<T>) -> Self {
+        Self { min, max }
+    }
+
+    /// Create a rectangle from any two corner points, automatically sorting them
+    /// to ensure min and max are correctly assigned
+    pub fn from_corners(p1: Pos<T>, p2: Pos<T>) -> Self {
+        Self {
+            min: Pos::new(Ord::min(p1.x, p2.x), Ord::min(p1.y, p2.y)),
+            max: Pos::new(Ord::max(p1.x, p2.x), Ord::max(p1.y, p2.y)),
+        }
+    }
+
+    pub fn intersect(&self, other: &Self) -> bool {
+        self.max_x() >= other.min_x()
+            && self.min_x() <= other.max_x()
+            && self.max_y() >= other.min_y()
+            && self.min_y() <= other.max_y()
+    }
+
+    pub fn y_range(&self) -> impl RangeBounds<T> {
+        self.min_y()..=self.max_y()
+    }
+
+    pub fn x_range(&self) -> impl RangeBounds<T> {
+        self.min_x()..=self.max_x()
+    }
+
+    pub fn collision(&self, other: &Self) -> bool {
+        let overlap_x = other.x_range().contains(&self.min_x())
+            || other.x_range().contains(&self.max_x())
+            || self.x_range().contains(&other.min_x())
+            || self.x_range().contains(&other.max_x());
+
+        let overlap_y = other.y_range().contains(&self.min_y())
+            || other.y_range().contains(&self.max_y())
+            || self.y_range().contains(&other.min_y())
+            || self.y_range().contains(&other.max_y());
+
+        overlap_x && overlap_y
+    }
+
+    pub fn max_x(&self) -> T {
+        Ord::max(self.min.x, self.max.x)
+    }
+
+    pub fn min_x(&self) -> T {
+        Ord::min(self.min.x, self.max.x)
+    }
+
+    pub fn max_y(&self) -> T {
+        Ord::max(self.min.y, self.max.y)
+    }
+
+    pub fn min_y(&self) -> T {
+        Ord::min(self.min.y, self.max.y)
+    }
+
+    pub fn translate(&self, direction: &Direction) -> Option<Self> {
+        self.translate_n(direction, 1)
+    }
+
+    pub fn translate_n(&self, direction: &Direction, n: usize) -> Option<Self> {
+        let min = self.min.translate_n(direction, n)?;
+        let max = self.max.translate_n(direction, n)?;
+        Some(Self::new(min, max))
+    }
+
+    /// Check if a point is strictly inside the rectangle (not on boundary)
+    pub fn contains_strict(&self, point: &Pos<T>) -> bool {
+        point.x > self.min_x()
+            && point.x < self.max_x()
+            && point.y > self.min_y()
+            && point.y < self.max_y()
+    }
+
+    /// Assumes p1 and p2 form either a horizontal or vertical segment.
+    pub fn segment_intersects_interior(&self, p1: &Pos<T>, p2: &Pos<T>) -> bool {
+        let seg_min_x = Ord::min(p1.x, p2.x);
+        let seg_max_x = Ord::max(p1.x, p2.x);
+        let seg_min_y = Ord::min(p1.y, p2.y);
+        let seg_max_y = Ord::max(p1.y, p2.y);
+
+        // Check if segment bounding box intersects rectangle interior
+        if seg_max_x < self.min_x()
+            || seg_min_x > self.max_x()
+            || seg_max_y < self.min_y()
+            || seg_min_y > self.max_y()
+        {
+            return false;
+        }
+
+        // If segment is vertical
+        if p1.x == p2.x {
+            let x = p1.x;
+            // Segment passes through interior if x is strictly inside rect and segment crosses y-range
+            if x > self.min_x()
+                && x < self.max_x()
+                && seg_max_y > self.min_y()
+                && seg_min_y < self.max_y()
+            {
+                return true;
+            }
+        }
+        // If segment is horizontal
+        else if p1.y == p2.y {
+            let y = p1.y;
+            // Segment passes through interior if y is strictly inside rect and segment crosses x-range
+            if y > self.min_y()
+                && y < self.max_y()
+                && seg_max_x > self.min_x()
+                && seg_min_x < self.max_x()
+            {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Get all four corners of the rectangle
+    pub fn corners(&self) -> [Pos<T>; 4] {
+        [
+            self.min.clone(),
+            Pos::new(self.max_x(), self.min_y()),
+            Pos::new(self.min_x(), self.max_y()),
+            self.max.clone(),
+        ]
+    }
+
+    /// Calculate the area of the rectangle (width * height)
+    pub fn area(&self) -> T {
+        let one: T = num_traits::cast(1).unwrap();
+        let width = self.max_x().abs_diff(self.min_x()) + one;
+        let height = self.max_y().abs_diff(self.min_y()) + one;
+        width.checked_mul(&height).expect("Rectangle area overflow")
+    }
+}
+
+impl<T> Debug for Rect<T>
+where
+    T: Display + Copy,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("[{:?}, {:?}]", self.min, self.max))
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Point3<T>
 where
     T: Display,
@@ -593,8 +761,8 @@ where
     T: Display + AsPrimitive<usize> + std::convert::From<usize>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for y in 0..self.width {
-            for x in 0..self.height {
+        for y in 0..self.height {
+            for x in 0..self.width {
                 let point: Pos<T> = Pos::new(x.into(), y.into());
                 if self.contains(&point) {
                     f.write_char('x')?;
@@ -743,7 +911,7 @@ mod tests {
     proptest! {
         #[test]
         fn bitmap_iter(
-            ps in prop::collection::hash_insert((0usize..1000usize, 0usize..1000usize).prop_map(|p|
+            ps in prop::collection::hash_set((0usize..1000usize, 0usize..1000usize).prop_map(|p|
                 Pos::new(p.0, p.1)
             ), 0..1000)) {
             let mut bm = BitMap::new(1000, 1000);
