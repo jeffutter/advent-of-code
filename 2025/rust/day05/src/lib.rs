@@ -1,7 +1,7 @@
 use std::ops::Range;
 
-use parser::{dig, dig_pair};
-use winnow::{Parser, ascii::newline, combinator::separated, token::rest};
+use parser::{dig_pair, FromDig};
+use winnow::{ModalResult, Parser, ascii::newline, combinator::separated, token::rest};
 
 type InputType = (Vec<Range<usize>>, Vec<usize>);
 type OutType = usize;
@@ -57,18 +57,29 @@ fn merge_range(r1: &Range<usize>, r2: &Range<usize>) -> Range<usize> {
     (r1.start.min(r2.start))..(r1.end.max(r2.end))
 }
 
+fn parse_range(s: &mut &str) -> ModalResult<Range<usize>> {
+    dig_pair("-").map(|(l, r)| l..(r + 1)).parse_next(s)
+}
+
+fn parse_ranges(s: &mut &str) -> ModalResult<Vec<Range<usize>>> {
+    separated(0.., parse_range, newline).parse_next(s)
+}
+
+fn parse_numbers(s: &mut &str) -> ModalResult<Vec<usize>> {
+    separated(0.., <usize as FromDig>::from_dig, newline).parse_next(s)
+}
+
 pub fn parse(data: &str) -> InputType {
-    let (fresh, _, _, available, _): (Vec<Range<usize>>, _, _, Vec<_>, _) = (
-        separated(0.., dig_pair("-").map(|(l, r)| l..(r + 1)), newline),
+    (
+        parse_ranges,
         newline,
         newline,
-        separated(0.., dig::<usize>, newline),
+        parse_numbers,
         rest,
     )
+        .map(|(fresh, _, _, available, _)| (fresh, available))
         .parse(data)
-        .unwrap();
-
-    (fresh, available)
+        .unwrap()
 }
 
 pub fn part1((fresh, available): InputType) -> OutType {

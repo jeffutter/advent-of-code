@@ -3,7 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use num_traits::{Signed, Unsigned};
 use util::{AbsDiff, Point3, Pos};
 use winnow::{
-    Parser,
+    ModalResult, Parser,
     ascii::digit1,
     combinator::{alt, opt, repeat, separated},
     error::Result,
@@ -13,33 +13,33 @@ use winnow::{
 pub trait FromDig {
     type Num;
 
-    fn from_dig(input: &mut &str) -> Result<Self::Num>;
+    fn from_dig(input: &mut &str) -> ModalResult<Self::Num>;
 }
 
 impl FromDig for u32 {
     type Num = u32;
-    fn from_dig(input: &mut &str) -> Result<Self::Num> {
+    fn from_dig(input: &mut &str) -> ModalResult<Self::Num> {
         digit1.try_map(|s: &str| s.parse::<u32>()).parse_next(input)
     }
 }
 
 impl FromDig for i32 {
     type Num = i32;
-    fn from_dig(input: &mut &str) -> Result<Self::Num> {
+    fn from_dig(input: &mut &str) -> ModalResult<Self::Num> {
         digit1.try_map(|s: &str| s.parse::<i32>()).parse_next(input)
     }
 }
 
 impl FromDig for i64 {
     type Num = i64;
-    fn from_dig(input: &mut &str) -> Result<Self::Num> {
+    fn from_dig(input: &mut &str) -> ModalResult<Self::Num> {
         digit1.try_map(|s: &str| s.parse::<i64>()).parse_next(input)
     }
 }
 
 impl FromDig for i128 {
     type Num = i128;
-    fn from_dig(input: &mut &str) -> Result<Self::Num> {
+    fn from_dig(input: &mut &str) -> ModalResult<Self::Num> {
         digit1
             .try_map(|s: &str| s.parse::<i128>())
             .parse_next(input)
@@ -48,14 +48,14 @@ impl FromDig for i128 {
 
 impl FromDig for usize {
     type Num = usize;
-    fn from_dig(input: &mut &str) -> Result<Self::Num> {
+    fn from_dig(input: &mut &str) -> ModalResult<Self::Num> {
         digit1
             .try_map(|s: &str| s.parse::<usize>())
             .parse_next(input)
     }
 }
 
-pub fn point<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> Result<Pos<T>> + '_
+pub fn point<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> ModalResult<Pos<T>> + '_
 where
     T: Display + FromDig<Num = T>,
 {
@@ -80,7 +80,7 @@ where
     }
 }
 
-pub fn point3<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> Result<Point3<T>> + '_
+pub fn point3<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> ModalResult<Point3<T>> + '_
 where
     T: Display
         + FromDig<Num = T>
@@ -105,7 +105,7 @@ where
     }
 }
 
-pub fn dig_pair<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> Result<(T, T)> + '_
+pub fn dig_pair<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> ModalResult<(T, T)> + '_
 where
     T: Display + FromDig<Num = T>,
 {
@@ -130,16 +130,15 @@ where
     }
 }
 
-pub fn separated_digits<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> Result<Vec<T>> + '_
+pub fn separated_digits<'a, T>(sep: &str) -> impl FnMut(&mut &'a str) -> ModalResult<Vec<T>> + '_
 where
     T: Display + FromDig<Num = T>,
 {
-    let sep_str = sep.to_string();
     move |input: &mut &'a str| {
         separated(
             1..,
             |i: &mut &'a str| <T as FromDig>::from_dig(i),
-            repeat::<_, _, String, _, _>(1.., alt((literal(sep_str.as_str()), literal(" ")))),
+            repeat::<_, _, String, _, _>(1.., alt((sep, literal(" ")))),
         )
         .parse_next(input)
     }
