@@ -21,12 +21,10 @@ pub fn math_line(input: &mut &str) -> winnow::error::Result<Vec<char>> {
     separated(0.., one_of(['+', '*']), space1).parse_next(input)
 }
 
-#[allow(unused_variables)]
 pub fn parse(data: &'_ str) -> InputType<'_> {
     data
 }
 
-#[allow(unused_variables)]
 pub fn part1(data: InputType) -> OutType {
     let (rows, _, math, _): (Vec<Vec<usize>>, _, Vec<_>, _) =
         (number_lines, line_ending, math_line, rest)
@@ -42,7 +40,6 @@ pub fn part1(data: InputType) -> OutType {
         .sum()
 }
 
-#[allow(unused_variables)]
 pub fn part2(data: InputType) -> OutType {
     let lines: Vec<&str> = data.lines().collect();
     let max_width = lines.iter().map(|l| l.len()).max().unwrap();
